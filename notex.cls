@@ -10,8 +10,6 @@
 	marginparwidth = 1in,
 }
 
-\RequirePackage{minted}
-
 \renewcommand*\maketitle{
 	\thispagestyle{empty}
 	\vspace*{\stretch{0.5}}
@@ -23,7 +21,9 @@
 	\vspace{\stretch{2}}
 }
 
-\newenvironment{code}[1]
-	{\VerbatimEnvironment
-	 \begin{minted}{#1}}
-	{\end{minted}}
+\RequirePackage{color, xcolor}
+\definecolor{light-gray}{gray}{0.95}
+
+\RequirePackage{minted}
+\newminted{cpp}{bgcolor=light-gray, xleftmargin=\parindent, linenos=true, mathescape=true}
+\newmintinline{cpp}{}
