@@ -1,6 +1,7 @@
 \ProvidesClass{NoTex}[2021/12/16 v0.0.2]
 
-\LoadClass[UTF8]{ctexbook}
+\LoadClass[UTF8]{ctexrep}
+\setCJKmainfont{Source Han Serif SC}
 
 \RequirePackage{geometry}
 \geometry{
@@ -27,3 +28,7 @@
 \RequirePackage{minted}
 \newminted{cpp}{bgcolor=light-gray, xleftmargin=\parindent, linenos=true, mathescape=true}
 \newmintinline{cpp}{}
+\newminted{gas}{bgcolor=light-gray, xleftmargin=\parindent, linenos=true}
+
+\usepackage{enumitem}
+\AddEnumerateCounter{\chinese}{\chinese}{}
