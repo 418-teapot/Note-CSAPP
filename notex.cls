@@ -26,9 +26,20 @@
 \definecolor{light-gray}{gray}{0.95}
 
 \RequirePackage{minted}
-\newminted{cpp}{bgcolor=light-gray, xleftmargin=\parindent, linenos=true, mathescape=true}
+\newminted{cpp}{
+    bgcolor=light-gray,
+    xleftmargin=\parindent,
+    linenos=true,
+    autogobble=true,
+    mathescape=true
+}
 \newmintinline{cpp}{}
-\newminted{gas}{bgcolor=light-gray, xleftmargin=\parindent, linenos=true}
+\newminted{gas}{
+    bgcolor=light-gray,
+    xleftmargin=\parindent,
+    autogobble=true,
+    linenos=true
+}
 
 \usepackage{enumitem}
 \AddEnumerateCounter{\chinese}{\chinese}{}
