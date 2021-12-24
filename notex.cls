@@ -41,5 +41,8 @@
     linenos=true
 }
 
-\usepackage{enumitem}
+\RequirePackage{enumitem}
 \AddEnumerateCounter{\chinese}{\chinese}{}
+
+\RequirePackage{tikz}
+\usetikzlibrary{positioning}
