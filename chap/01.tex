@@ -1,0 +1,109 @@
+\chapter{计算机系统漫游}
+
+计算机系统是由硬件和系统软件组成的，它们共同工作来运行应用程序。虽然系统的具体实现方式随着时间不断变化，但是系统内在的概念却没有改变。所有计算机系统都有相似的硬件和软件组成，它们又执行着相似的功能。
+
+我们将跟踪 hello 程序的生命周期来开始对系统的学习————从它被程序员创建开始，到在系统上运行，输出简单的信息，然后中止。
+
+hello 程序（hello.c）：
+\begin{cppcode}
+#include <stdio.h>
+
+int main() {
+    printf("hello, world\n");
+    return 0;
+}
+\end{cppcode}
+
+\section{信息就是位 + 上下文}
+
+hello 程序的生命周期是从源文件开始的，本质上是比特序列，像 hello.c 这样只由字符构成的文件称为文本文件，所有其他文件都称为二进制文件。
+
+hello.c 的表示方法说明了一个基本思想：系统中所有的信息，包括磁盘文件、内存中的程序、内存中存放的用户数据以及网络上传送的数据，都是由一串比特表示的。区分不同数据对象的唯一方法是我们读到这些数据对象时的上下文。
+
+\section{程序被其他程序翻译成不同的格式}
+
+为了在系统上运行 hello.c 程序，每条 C 语句都必须被其他程序转化为一系列的低级机器语言指令。然后这些指令按照一种称为可执行目标程序（可执行目标文件）的格式打包，并以二进制文件的形式存放起来。
+
+Linux 系统上，从源文件到目标文件的转化是由编译期驱动程序（例如 GCC 或者 clang）完成的，这个翻译过程可以分为四个阶段，如图所示。执行这四个阶段的程序（预处理器，编译期，汇编器和链接器）一起构成了编译系统(compilation system）。
+
+\begin{tikzpicture}
+    \coordinate (begin) at (0,0);
+    \node[draw, inner sep=6pt, align=center] (cpp) [right=of begin, xshift=0.5cm] {Pre-\\processor\\(cpp)};
+    \node[draw, inner sep=6pt, align=center] (cc1) [right=of cpp, xshift=0.5cm] {Compiler\\(cc1)};
+    \node[draw, inner sep=6pt, align=center] (as)  [right=of cc1, xshift=0.5cm] {Assembler\\(as)};
+    \node[draw, inner sep=6pt, align=center] (ld)  [right=of as, xshift=0.9cm] {Linker\\(ld)};
+    \coordinate [right=of ld, xshift=0.9cm] (end);
+    \coordinate [above=0.8cm of ld.west, xshift=-1.5cm] (tmp0);
+    \coordinate [above=0.5cm of ld.west] (tmp1);
+    \draw[thick, ->] (0,0) -- node[above] {$hello.c$} node[below, align=center] {Source\\program\\(text)} (cpp.west);
+    \draw[thick, ->] (cpp.east) -- node[above] {$hello.i$} node[below, align=center] {Modified\\source\\program\\(text)} (cc1.west);
+    \draw[thick, ->] (cc1.east) -- node[above] {$hello.s$} node[below, align=center] {Assembly\\program\\(text)} (as.west);
+    \draw[thick, ->] (as.east) -- node[above] {$hello.o$} node[below, align=center] {Relocatable\\object\\programs\\(binary)} (ld.west);
+    \draw[thick, ->] (ld.east) -- node[above] {$hello$} node[below, align=center] {Executable\\object\\program\\(binary)} (end.west);
+    \draw[thick, ->] (tmp0) node[above] {$printf.o$} |- (tmp1);
+\end{tikzpicture}
+
+\begin{itemize}
+    \item 预处理阶段。预处理器（cpp）根据以字符 \# 开头的命令，修改原始的 C 程序。比如 hello.c 中第 1 行的 \cppinline{#include <stdio.h>} 命令告诉预处理器读取系统头文件 stdio.h 的内容，并把它直接插入程序文本中。结果就得到了另一个 C 程序，通常是以 .i 作为文件扩展名。
+    \item 编译阶段。编译器（cc1）将文本文件 hello.i 翻译成文本文件 hello.s ，它包含一个汇编语言程序。该程序包含函数 main 的定义，如下所示：
+    \begin{gascode}
+    main:
+        subq $8, %rsp
+        movl $.LC0, %edi
+        call puts
+        movl $0, %eax
+        addq $8, %rsp
+        ret
+    \end{gascode}
+    定义中 2\~{}7 行的每条语句都以一种文本格式描述了一条低级机器语言指令。汇编语言是非常有用的，因为它为不同高级语言的不同编译器提供了通用的输出语言。
+    \item 汇编阶段。接下来，汇编器（as）将 hello.s 翻译成机器语言指令，把这些指令打包成一种叫做可重定位目标程序（relocatable object program）的格式，并将结果保存在目标文件 hello.o 中。
+    \item 链接阶段。hello 程序调用了 printf 函数，它是 C 编译器提供的标准 C 库中的一个函数。printf 函数存在于一个名为 printf.o 的单独的预编译好了的目标文件中，而这个文件必须以某种方式合并到我们的 hello.o 程序中。链接器（ld）就负责处理这种合并。结果就得到 hello 文件，它是一个可执行目标文件，可以被加载到内存中，由系统执行。
+\end{itemize}
+
+\section{了解编译系统如何工作是大有益处的}
+
+\begin{itemize}
+    \item 优化程序性能。
+    \item 理解链接时出现的错误。
+    \item 避免安全漏洞。
+\end{itemize}
+
+\section{处理器读并解释储存在内存中的指令}
+
+\subsection{系统的硬件组成}
+
+\subsubsection{总线}
+
+贯穿整个系统的是一组电子管道，称作总线，它携带信息字节并负责在各个部件间传递。通常总线被设计成传送定长的字节块，也就是字（word）。
+
+\subsubsection{I/O设备}
+
+I/O（输入/输出）设备是系统与外部世界的联系通道。每个 I/O 设备都童工一个控制器或适配器与 I/O 总线相连。
+
+\subsubsection{主存}
+
+主存是一个临时存储设备，在处理器执行程序时，用来存放程序和程序处理的数据。从物理上来说，主存是由一组动态随机存储器（DRAM）芯片组成的。从逻辑上来说，存储器是一个线性的字节数组，每个字节都有其唯一的地址（数组索引），这些地址是从 0 开始的。
+
+\subsubsection{处理器}
+
+中央处理单元（CPU），简称处理器，是解释（或执行）存储在主存中指令的引擎。处理器的核心是一个大小为一个字的存储设备（或寄存器），称为程序计数器（PC）。在任何时刻，PC 都指向主存中的某条机器语言指令（即含有该条指令的地址）。
+
+从系统通电开始，直到系统断电，处理器一直在不断地执行程序计数器指向的指令，再更新程序计数器，使其指向下一条指令。
+
+\subsection{运行 hello 程序}
+
+初始时，shell 程序执行它的指令，等待我们输入一个命令。当我们在键盘上输入字符串 ``./hello'' 后，shell 程序将字符逐一读入寄存器，再把它存放到内存中。
+
+当我们在键盘上敲回车键时，shell 程序就知道我们已经结束了命令的输入。然后 shell 执行一系列指令来加载可执行的 hello 文件，这些指令将 hello 目标文件中的代码和数据通过 DMA 的方式直接从磁盘复制到主存。数据包括最终会被输出的字符串 \cppinline{"hello, world\n"}。
+
+一旦目标文件 hello 中的代码和数据被加载到主存，处理器就开始执行 hello 程序的 main 中的机器语言指令。这些指令将 \cppinline{"hello, world\n"} 字符串中的字节从主存复制到寄存器中，再从寄存器中复制到显示设备，最终显示在屏幕上。
+
+\section{高速缓存至关重要}
+
+针对处理器与主存之间的差异，系统设计者采用了更小更快的存储设备，称为 cache，作为暂时的集结区域，存放处理器近期可能会需要的信息。比较新的、处理能力更强大的系统有三级 cache：L1、L2 和 L3。系统可以获得一个很大的存储器，同时访问速度也很快，原因是利用了高速缓存的局部性原理，即程序具有访问局部区域里的数据和代码的趋势。通过让高速缓存里存放可能经常性访问的数据，大部分的内存操作都能在快速的高速缓存中完成。
+
+\section{存储设备形成层次结构}
+
+在每个计算机系统中的存储设备都被组织成了一个存储器层次结构，如图所示。在这个层次结构中，从上至下，设备的访问速度越来越慢、容量越来越大，并且每字节的造价也越来越便宜。
+
+\endinput
