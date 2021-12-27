@@ -1,7 +1,12 @@
 \ProvidesClass{NoTex}[2021/12/16 v0.0.2]
 
 \LoadClass[UTF8]{ctexrep}
-\setCJKmainfont{Source Han Serif SC}
+
+\xeCJKsetup{AutoFallBack = true}
+\setCJKfallbackfamilyfont{\CJKrmdefault}{
+    {Source Han Serif SC},
+    {Source Han Serif CN},
+    {PingFangSC-Regular}}
 
 \RequirePackage{geometry}
 \geometry{
@@ -27,18 +32,18 @@
 
 \RequirePackage{minted}
 \newminted{cpp}{
-    bgcolor=light-gray,
-    xleftmargin=\parindent,
-    linenos=true,
-    autogobble=true,
-    mathescape=true
+    bgcolor = light-gray,
+    xleftmargin = \parindent,
+    linenos = true,
+    autogobble = true,
+    mathescape = true
 }
 \newmintinline{cpp}{}
 \newminted{gas}{
-    bgcolor=light-gray,
-    xleftmargin=\parindent,
-    autogobble=true,
-    linenos=true
+    bgcolor = light-gray,
+    xleftmargin = \parindent,
+    autogobble = true,
+    linenos = true
 }
 
 \RequirePackage{enumitem}
