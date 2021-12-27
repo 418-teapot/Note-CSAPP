@@ -6,7 +6,8 @@
 \setCJKfallbackfamilyfont{\CJKrmdefault}{
     {Source Han Serif SC},
     {Source Han Serif CN},
-    {PingFangSC-Regular}}
+    {PingFangSC-Regular}
+}
 
 \RequirePackage{geometry}
 \geometry{
@@ -50,4 +51,4 @@
 \AddEnumerateCounter{\chinese}{\chinese}{}
 
 \RequirePackage{tikz}
-\usetikzlibrary{positioning}
+\usetikzlibrary{calc, decorations.pathreplacing, positioning}
