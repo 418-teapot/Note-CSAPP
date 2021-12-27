@@ -52,3 +52,14 @@
 
 \RequirePackage{tikz}
 \usetikzlibrary{calc, decorations.pathreplacing, positioning}
+
+\newenvironment{tikzfig}
+    {
+        \begin{figure}[!ht]
+        \centering
+        \begin{tikzpicture}[node font=\small]
+    }
+    {
+        \end{tikzpicture}
+        \end{figure}
+    }
