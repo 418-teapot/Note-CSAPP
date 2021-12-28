@@ -2,7 +2,7 @@
 
 计算机系统是由硬件和系统软件组成的，它们共同工作来运行应用程序。虽然系统的具体实现方式随着时间不断变化，但是系统内在的概念却没有改变。所有计算机系统都有相似的硬件和软件组成，它们又执行着相似的功能。
 
-我们将跟踪 hello 程序的生命周期来开始对系统的学习————从它被程序员创建开始，到在系统上运行，输出简单的信息，然后中止。
+我们将跟踪 hello 程序的生命周期来开始对系统的学习——从它被程序员创建开始，到在系统上运行，输出简单的信息，然后中止。
 
 hello 程序（hello.c）：
 \begin{cppcode}
@@ -187,7 +187,7 @@ I/O（输入/输出）设备是系统与外部世界的联系通道。每个 I/O
     \draw[decorate, decoration={brace, raise=5pt}] (bd2) -- node[right, xshift=6pt]{Hardware} (bd3);
 \end{tikzfig}
 
-操作系统有两个基本功能：(1) 防止硬件被失控的应用程序滥用; (2) 向应用程序提供简单一致的机制来控制复杂而又通常大不相同的低级硬件设备。操作系统通过几个基本的抽象概念（进程、虚拟内存和文件）来实现这两个功能。如图所示，文件是对 I/O 设备的抽象表示，虚拟内存是对主存和磁盘 I/O 设备的抽象表示，进程是对处理器、主存和 I/O 设备的抽象表示。
+操作系统有两个基本功能：(1) 防止硬件被失控的应用程序滥用；(2) 向应用程序提供简单一致的机制来控制复杂而又通常大不相同的低级硬件设备。操作系统通过几个基本的抽象概念（进程、虚拟内存和文件）来实现这两个功能。如图所示，文件是对 I/O 设备的抽象表示，虚拟内存是对主存和磁盘 I/O 设备的抽象表示，进程是对处理器、主存和 I/O 设备的抽象表示。
 
 \begin{tikzfig}
     \coordinate (A) at (0, 0);
@@ -211,12 +211,9 @@ I/O（输入/输出）设备是系统与外部世界的联系通道。每个 I/O
     \draw[decorate, decoration={brace, raise=25pt}] (A -| cd1) -- node[above, yshift=26pt]{Virtual memory} (B);
     \draw[decorate, decoration={brace, raise=45pt}] (A) -- node[above, yshift=46pt]{Processes} (B);
 
-    \draw[dashed] (A) -- (0, 45pt);
-    \draw[dashed] (B) -- (10, 45pt);
-    
-    \coordinate (ab1) at (A -| cd1);
-    \coordinate (tmp) at (10, 25pt);
-    \draw[dashed] (ab1) -- (ab1 |- tmp);
+    \draw[dashed] (A) -- ++(0, 45pt);
+    \draw[dashed] (B) -- ++(0, 45pt);
+    \draw[dashed] (A -| cd1) -- ++(0, 25pt);
 \end{tikzfig}
 
 \subsection{进程}
@@ -233,7 +230,7 @@ I/O（输入/输出）设备是系统与外部世界的联系通道。每个 I/O
 
 \subsection{虚拟内存}
 
-虚拟内存是一个抽象概念，它为每个进程提供了一个假象：每个进程都在独占地使用主存。每个进程看到的内存都是一致的，称为虚拟地址空间。下图为 Linux 进程的虚拟地址空间。
+虚拟内存是一个抽象概念，它为每个进程提供了一个假象：每个进程都在独占地使用主存。每个进程看到的内存都是一致的，称为虚拟地址空间。下图为 Linux 进程的虚拟地址空间。在 Linux 中，地址空间最上面的区域是保留给操作系统中的代码和数据的，这对所有进程来说都一样。地址空间的底部区域存放用户进程定义的代码和数据。
 
 \begin{tikzfig}
     \coordinate (A) at (0, 0);
@@ -273,9 +270,108 @@ I/O（输入/输出）设备是系统与外部世界的联系通道。每个 I/O
     \draw[<-] (ac8) -- node[left, align=right]{Program\\[-0.3em]start} ++(-0.6, 0);
     \node [left=0 of ac9] {0};
     \draw[->] ($(ac1-|B) + (5pt, 0)$) -- node[right, align=left]{Memory\\[-0.3em]invisible to\\[-0.3em]user code} ($(B) + (5pt, 0)$);
-    %\draw[xshift=5pt, ->] (ac1-|B) -- (B);
     \draw (ac3-|B) -- node[right]{$printf$ function} (ac4-|B);
     \draw[decorate, decoration={brace, raise=5pt}] (ac6-|B) -- node[right, xshift=6pt, align=left]{Loaded from the\\[-0.3em]$hello$ executable file} (ac8-|B);
 \end{tikzfig}
+
+每个进程看到的虚拟地址哦空间由大量准确定义的区构成，每个区都有专门的功能。
+
+\begin{itemize}
+    \item 程序代码和数据。对所有的进程来说，代码是从同一固定地址开始，紧接着的是和 C 全局变量相对应的数据位置。代码和数据区是直接按照可执行目标文件的内容初始化的。
+    \item 堆。代码和数据区在进程一开始运行时就被指定了大小，于此不同，当调用像 $malloc$ 和 $free$ 这样的 C 标准库函数时，堆可以在运行时动态地扩展和收缩。
+    \item 共享库。大约在地址空间的中间部分是一块用来存放想 C 标准库和数学库这样的共享库的代码和数据的区域。
+    \item 栈。位于用户虚拟地址空间顶部的是用户栈，编译器用它来实现函数调用。和堆一样，用户栈在程序执行期间可以动态地扩展和收缩。
+    \item 内核虚拟内存。地址空间顶部的区域是为内核保留的。不逊于应用程序读写这个区域的内容或者直接调用内核代码定义的函数。
+\end{itemize}
+
+\subsection{文件}
+
+文件就是字节序列，仅此而已。每个 I/O 设备，包括磁盘、键盘、显示器，甚至网络，都可以看成是文件。文件这个概念向应用程序提供了一个统一的视图，来看待系统中各式各样的 I/O 设备。
+
+\section{系统之间利用网络通信}
+
+现代系统经常通过网络和其他系统连接到一起。
+
+\section{重要主题}
+
+\subsection{Amdahl 定律}
+
+该定律的主要思想是，当我们对系统的某个部分加速时，其对系统整体性能的影响取决于该部分的重要性和加速程度。
+
+若某系统执行某应用程序需要时间为 $T_{old}$ 。假设系统某部分所需执行时间与该时间的比例为 $\alpha$ ，而该部分性能提升比例为 $k$ 。即该部分初始所需时间为 $\alpha T_{old}$ ，现在所需时间为 $(\alpha T_{old}) / k$ 。因此，总的执行时间应为
+\[
+    T_{new} = (1 - \alpha) T_{old} + (\alpha T_{old}) / k = T_{old}[(1 - \alpha) + \alpha / k]
+\]
+
+由此，可以计算加速比 $S = T_{old} / T_{new}$ 为
+\begin{equation}
+    S = \frac{1}{(1 - \alpha) + \alpha / k}
+\end{equation}
+
+Amdahl 揭示了：要想显著加速整个系统，必须提升全系统中相当大的部分的速度。
+
+\subsection{并发和并行}
+
+术语并发（concurrency）是一个通用的概念，指一个同时具有多个活动的系统；而术语并行（parallelism）指的是用并发来使一个系统运行得更快。并行可以在计算机系统的多个抽象层次上运用。
+
+\subsubsection{线程级并发}
+
+使用线程，可以在一个进程中执行多个控制流。现代处理器使用超线程（hyperthreading）技术来支持线程级并发。
+
+\subsubsection{指令级并行}
+
+在较低的抽象层次上，现代处理器可以同时执行多条指令的属性被称为指令级并行。如果处理器可以达到比一个周期一条指令更快的执行效率，就称之为超标量（superscalar）处理器。
+
+\subsubsection{单指令、多数据并行}
+
+在最低层次上，许多现代处理器拥有特殊的硬件，允许一条指令产生多个可以并行执行的操作，这种方式称为单指令、多数据，即 SIMD 并行。
+
+\section{计算机系统中抽象的重要性}
+
+抽象的使用是计算机科学中最为重要的概念之一。
+
+在处理器里，指令集架构提供了对实际处理器硬件的抽象。使用这个抽象，机器代码程序表现得就好像运行在一个一次只执行一条指令的处理器上。在学习操作系统时，我们介绍了三个抽象：文件是对 I/O 设备的抽象，虚拟内存是对程序存储器的抽象，而进程是对一个正在运行的程序的抽象。我们再增加一个新的抽象：虚拟机，它提供对整个计算机的抽象，包括操作系统、处理器和程序。
+
+\begin{tikzfig}
+    \coordinate (A) at (0, 0);
+    \coordinate (B) at (12, 0);
+    \coordinate (C) at (0, -1.5em);
+    \path (B |- C) coordinate(D);
+
+    \foreach \i in {1, 2, 3, 4} {
+        \coordinate (cd\i) at ($(C)!\i/4!(D)$);
+    }
+
+    \draw (A) -- (B);
+    \draw (A) -- (C);
+    \draw (B) -- (D);
+    \draw (cd1) -- (A -| cd1);
+    \draw (cd2) -- (A -| cd2);
+    \draw (cd3) -- (A -| cd3);
+    \draw (C) -- node[above]{Operating system} (cd1)
+              -- node[above]{Processor} (cd2)
+              -- node[above]{Main memory} (cd3)
+              -- node[above]{I/O devices} (cd4);
+    \draw[decorate, decoration={brace, raise=5pt}] (A -| cd3) -- node[above, yshift=6pt]{Files} (B);
+    \draw[decorate, decoration={brace, raise=25pt}] (A -| cd2) -- node[above, yshift=26pt]{Virtual memory} (B);
+    \draw[decorate, decoration={brace, raise=25pt}] (A -| cd1) -- node[above, yshift=26pt, align=center]{Instruction set\\[-0.3em]architecture} (A -| cd2);
+    \draw[decorate, decoration={brace, raise=45pt}] (A -| cd1) -- node[above, yshift=46pt]{Processes} (B);
+    \draw[decorate, decoration={brace, raise=65pt}] (A) -- node[above, yshift=66pt]{Virtual machine} (B);
+
+    \draw[dashed] (A) -- ++(0, 65pt);
+    \draw[dashed] (B) -- ++(0, 65pt);
+    \draw[dashed] (A -| cd1) -- ++(0, 45pt);
+    \draw[dashed] (A -| cd2) -- ++(0, 25pt);
+\end{tikzfig}
+
+\section{小结}
+
+计算机系统是由硬件和系统软件组成的，它们共同协作以运行应用程序。计算机内部的信息被表示为一组组的位，它们根据上下文有不同的解释方式。程序被其他程序翻译成不同的形式，开始时是纯文本，然后被编译器和链接器翻译成二进制可执行文件。
+
+处理器读取并解释存放在主存里的二进制指令。因为计算机话费了大量的时间在内存、I/O 设备和 CPU 寄存器之间复制数据，所以将系统中的存储设备划分成层次结构——CPU 寄存器在顶部，接着是多层的硬件高速缓存存储器、DRAM 主存和磁盘存储器。在层次模型中，位于更高层的存储设备要更快，单位比特造价也更高。层次结构中较高层次的存储设备可以作为较低层次设备的高速缓存。通过理解和运用这种存储层次结构的知识，程序员可以优化 C 程序的性能。
+
+操作系统内核是应用程序和硬件之间的媒介。它提供三个基本的抽象：1）文件是对 I/O 设备的抽象；2）虚拟内存是对主存和磁盘的抽象；3）进程是处理器、主存和 I/O 设备的抽象。
+
+最后，网络提供了计算机系统之间通信的手段。从特殊系统的角度来看，网络就是一种 I/O 设备。
 
 \endinput
