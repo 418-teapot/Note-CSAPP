@@ -63,3 +63,7 @@
         \end{tikzpicture}
         \end{figure}
     }
+
+\RequirePackage{booktabs}
+
+\RequirePackage[ruled, linesnumbered]{algorithm2e}
