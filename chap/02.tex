@@ -1,0 +1,154 @@
+\chapter{信息的表示和处理}
+
+我们研究三种最重要的数字表示。无符号（unsignd）编码基于传统的二进制表示法，表示大于或者等于零的数字。补码（two's-complement）编码是表示有符号整数的最常见的方式。浮点数（floating-point）编码是表示实数的科学计数法的以 2 为基数的版本。
+
+计算机的表示法是用有限数量的位来对一个数字编码，因此，当结果太大以至于不能表示时，某些运算就会溢出（overflow）。
+
+\section{信息存储}
+
+大多数计算机使用 8 位的块，或者字节（byte），作为最小的可寻址的内存单位，而不是访问内存中单独的位。机器级程序将内存视为一个非常大的字节数组，称为虚拟内存（virtual memory)。内存的每个字节都由一个唯一的数字来标识，称为它的地址（address），所有可能地址的集合就称为虚拟地址空间（virtual address space）。
+
+\subsection{十六进制表示法}
+
+略。
+
+\subsection{字数据大小}
+
+每台计算机都有一个字长（word size），指明指针数据的标称大小（nominal size）。因为虚拟地址是以这样的一个字来编码的，所以字长决定的最重要的系统参数就是虚拟地址空间的最大大小。对于一个字长为 $w$ 位的机器而言，虚拟地址的范围为 $0 \~{} 2^w - 1$ ，程序最多访问 $2^w$ 个字节。
+
+下表展示了为 C 语言各种数据类型分配的字节数。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{ccccc}
+        \toprule
+        \multicolumn{2}{c}{C declaration} & & \multicolumn{2}{c}{Bytes} \\
+        \cmidrule{1-2}
+        \cmidrule{4-5}
+        Signed & Unsigned & & 32-bit & 64-bit \\
+        \midrule
+        (signed) char  & unsigned char  & & 1 & 1 \\
+        short          & unsigned char  & & 2 & 2 \\
+        int            & unsigned       & & 4 & 4 \\
+        long           & unsigned long  & & 4 & 8 \\
+        int32\_t       & uint32\_t      & & 4 & 4 \\
+        int64\_t       & uint64\_t      & & 8 & 8 \\
+        char *         &                & & 4 & 8 \\
+        float          &                & & 4 & 4 \\
+        double         &                & & 8 & 8 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{寻址和字节顺序}
+
+对于跨越多字节的程序对象，必须建立两个规则：这个对象的地址是什么，以及在内存中如何排列这些字节。在几乎所有的机器上，多字节对象都被存储为连续的字节序列，对象的地址为所使用字节中最小的地址。
+
+排列一个对象的字节有两种规则。考虑一个 $w$ 位的整数，其位表示为 $[x_{w-1}, x_{w-2}, \dots, x_1, x_0]$，其中 $x_{w-1}$ 是最高有效位，而 $x_0$ 是最低有效位。假设 $w$ 是 8 的倍数，这些位就能被分组成字节，其中最高有效字节包含位 $[x_{w-1}, x_{w-2}, \dots, x_{w-8}]$，而最低有效字节包含位 $[x_7, x_6, \dots, x_0]$，其他字节包含中间的位。某些机器选择在内存中按照从最低有效字节到最高有效字节的顺序存储对象；而另一个机器则按照从最高有效字节到最低有效字节的顺序存储。分别被称为小端序（little endian）和大端序（big endian）。
+
+假设变量 \verb|x| 的类型为 \verb|int|，位于地址 \verb|0x100| 处，它的 16 进制值为 \verb|0x01234567|。地址范围 \verb|0x100~0x103| 的字节顺序依赖于机器的类型：
+
+\begin{tikzfig}
+    \coordinate (A) at (0, 0);
+    \coordinate (B) at (10, 0);
+    \coordinate (C) at (0, -1.2em);
+    \coordinate (D) at (B |- C);
+    \coordinate (E) at ($(A) + (0, -2)$);
+    \coordinate (F) at ($(B) + (0, -2)$);
+    \coordinate (G) at ($(C) + (0, -2)$);
+    \coordinate (H) at ($(D) + (0, -2)$);
+
+    \foreach \i in {1, 2, ..., 6} {
+        \coordinate (cd\i) at ($(C)!\i/6!(D)$);
+        \coordinate (gh\i) at ($(G)!\i/6!(H)$);
+        \ifthenelse {\i < 6} {
+            \draw (cd\i) -- (A -| cd\i);
+            \draw (gh\i) -- (E -| gh\i);
+        } {}
+    }
+    
+    \draw (A) -- node[above, yshift=5pt]{大端序} (A -| cd1)
+              -- node[above]{0x100} (A -| cd2)
+              -- node[above]{0x101} (A -| cd3)
+              -- node[above]{0x102} (A -| cd4)
+              -- node[above]{0x103} (A -| cd5)
+              -- (B);
+    \draw (C) -- node[above]{$\cdots$} (cd1)
+              -- node[above]{01} (cd2)
+              -- node[above]{23} (cd3)
+              -- node[above]{45} (cd4)
+              -- node[above]{67} (cd5)
+              -- node[above]{$\cdots$} (D);
+
+    \draw (E) -- node[above, yshift=5pt]{小端序} (E -| gh1)
+              -- node[above]{0x100} (E -| gh2)
+              -- node[above]{0x101} (E -| gh3)
+              -- node[above]{0x102} (E -| gh4)
+              -- node[above]{0x103} (E -| gh5)
+              -- (F);
+    \draw (G) -- node[above]{$\cdots$} (gh1)
+              -- node[above]{67} (gh2)
+              -- node[above]{45} (gh3)
+              -- node[above]{23} (gh4)
+              -- node[above]{01} (gh5)
+              -- node[above]{$\cdots$} (H);
+\end{tikzfig}
+
+x86 使用小端序，IBM 和 Oracle 使用大端序，较新的处理器是双端序（bi-endian，如 ARM，可以配置为大端序或者小端序），但实际情况还取决于操作系统，如 Android 和 IOS 只能运行于小端序。
+
+了解字节序的意义：1）不同端序的机器之间通过网络通信时；2）阅读反汇编代码时；3）C 语言通过 cast 或者 union 以一种数据类型引用另一种数据类型时。
+
+\subsection{表示字符串}
+
+C 语言中字符串被编码为一个以 null 字符结尾的字符数组。
+
+\subsection{表示代码}
+
+计算机系统的一个基本概念是，从机器的角度来看，程序仅仅只是字节序列。机器没有关于原始源程序的任何信息，除了可能有些用来帮助调试的辅助表以外。
+
+\subsection{布尔代数简介}
+
+略。
+
+\subsection{C 语言中的位级运算}
+
+略。
+
+\subsection{C 语言中的逻辑运算}
+
+略。
+
+\subsection{C 语言中的移位运算}
+
+C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无符号数是逻辑右移。
+
+\section{整数表示}
+
+下表为引入的数学术语，用于精确定义和描述计算机如何编码和操作整数。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        Symbol & Type & Meaning \\
+        \midrule
+        $B2T_w$  & Function  & Binary to tow's complement \\
+        $B2U_w$  & Function  & Binary to unsigned \\
+        $U2B_w$  & Function  & Unsigned to binary \\
+        $U2T_w$  & Function  & Unsigned to two's complement \\
+        $T2B_w$  & Function  & Two's complement to binary \\
+        $T2U_w$  & Function  & Two's complement to unsigned \\
+        $TMin_w$ & Constant  & Minimum tow's-complement value \\
+        $TMax_w$ & Constant  & Maximum two's-complement value \\
+        $UMax_w$ & Constant  & Maximum unsigned value \\
+        $+^t_w$  & Operation & Two's-complement addition \\
+        $+^u_w$  & Operation & Unsigned addition \\
+        $*^t_w$  & Operation & Two's-complement multiplication \\
+        $*^u_w$  & Operation & Unsigned multiplication \\
+        $-^t_w$  & Operation & Two's-complement negation \\
+        $-^u_w$  & Operation & Unsigned negation \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\endinput
