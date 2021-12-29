@@ -53,7 +53,7 @@
 \AddEnumerateCounter{\chinese}{\chinese}{}
 
 \RequirePackage{tikz}
-\usetikzlibrary{calc, decorations.pathreplacing, positioning}
+\usetikzlibrary{arrows, arrows.meta, calc, decorations.pathreplacing, positioning}
 
 \newenvironment{tikzfig}
     {
