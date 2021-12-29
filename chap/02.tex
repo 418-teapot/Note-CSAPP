@@ -151,4 +151,22 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     \end{tabular}
 \end{table}
 
+\section{整型数据类型}
+
+略。
+
+\section{无符号数的编码}
+
+\begin{definition}[Unsigned encoding]
+    For vector $\vec{x} = [x_{w-1}, x_{w-2}, \dots, x_0]$ :
+    \begin{equation}
+        B2U_w(\vec{x}) \doteq \sum\limits_{i=0}^{w-1} x_i 2^i
+    \end{equation}
+\end{definition}
+
+下图中，用长度为 $2^i$ 的指向右侧箭头的条表示每个位的位置 $i$。每个位向量对应的数值就等于所有值为 1 的位对应的条的长度之和。
+
+\begin{theorem}[Uniqueness of unsigned encoding]
+    Function $B2U_w$ is a bijection.
+\end{theorem}
 \endinput
