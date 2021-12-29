@@ -77,14 +77,29 @@
 \settowidth{\spacelength}{\normalfont\ }
 \declaretheoremstyle[
     headfont = {\bfseries\sffamily\footnotesize},
-    notefont = {\itshape},
+    notefont = {\normalfont},
+    notebraces = {}{},
     bodyfont = {\itshape},
-    headpunct = {\relax},%\newline,
-    headformat = {%
+    headpunct = {\newline},
+    headformat = {
         \makebox[0pt][r] {\NAME\ \NUMBER\hspace{\marginparsep}}
         \hskip-\spacelength{\normalsize\NOTE}
     },
 ]{theorem}
+
+\tcolorboxenvironment{theorem}{
+    boxrule = 0pt,
+    boxsep = 0pt,
+    colback = {White!90!Dandelion},
+    enhanced jigsaw,
+    borderline west = {1pt}{0pt}{Dandelion},
+    sharp corners,
+    before skip = 10pt,
+    after skip = 10pt,
+    left = 5pt,
+    right = 5pt,
+    breakable,
+}
 \declaretheorem[style=theorem]{theorem}
 
 \theoremstyle{theorem}
