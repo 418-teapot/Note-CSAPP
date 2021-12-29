@@ -28,7 +28,9 @@
     \vspace{\stretch{2}}
 }
 
-\RequirePackage{color, xcolor}
+%\RequirePackage{color, xcolor}
+\RequirePackage{color}
+\RequirePackage[usenames, dvipsnames]{xcolor}
 \definecolor{light-gray}{gray}{0.95}
 
 \RequirePackage{minted}
@@ -67,3 +69,36 @@
 \RequirePackage{booktabs}
 
 \RequirePackage[ruled, linesnumbered]{algorithm2e}
+
+\RequirePackage{amsthm}
+\RequirePackage[many]{tcolorbox}
+\RequirePackage{thmtools}
+\newlength{\spacelength}
+\settowidth{\spacelength}{\normalfont\ }
+\declaretheoremstyle[
+    headfont = {\bfseries\sffamily\footnotesize},
+    notefont = {\itshape},
+    bodyfont = {\itshape},
+    headpunct = {\relax},%\newline,
+    headformat = {%
+        \makebox[0pt][r] {\NAME\ \NUMBER\hspace{\marginparsep}}
+        \hskip-\spacelength{\normalsize\NOTE}
+    },
+]{theorem}
+\declaretheorem[style=theorem]{theorem}
+
+\theoremstyle{theorem}
+\newtheorem{definition}{Definition}
+\tcolorboxenvironment{definition}{
+    boxrule = 0pt,
+    boxsep = 0pt,
+    colback = {White!90!Cerulean},
+    enhanced jigsaw,
+    borderline west = {1pt}{0pt}{Cerulean},
+    sharp corners,
+    before skip = 10pt,
+    after skip = 10pt,
+    left = 5pt,
+    right = 5pt,
+    breakable,
+}
