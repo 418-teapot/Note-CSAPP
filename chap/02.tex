@@ -166,6 +166,44 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
 
 下图中，用长度为 $2^i$ 的指向右侧箭头的条表示每个位的位置 $i$。每个位向量对应的数值就等于所有值为 1 的位对应的条的长度之和。
 
+\begin{tikzfig}
+    \tikzset{arw/.style={>={Triangle[length=1.5mm, width=4mm]}, line width=4mm, draw=White!30!Cerulean}}
+    \draw[arw, ->] (0, 0) node[left]{$2^3=8$} -- (4, 0);
+    \draw[arw, ->] (0, -1.5em) node[left]{$2^2=4$} -- (2, -1.5em);
+    \draw[arw, ->] (0, -3em) node[left]{$2^1=2$} -- (1, -3em);
+    \draw[arw, ->] (0, -4.5em) node[left]{$2^0=1$} -- (0.5, -4.5em);
+
+    \coordinate (A) at (0, -7em);
+    \coordinate (B) at (8, -7em);
+    \draw (A) -- (B);
+
+    \foreach \i in {1, 2, ..., 16} {
+        \coordinate (ab\i) at ($(A)!\i/16!(B)$);
+        \draw ($(ab\i) + (0, 2pt)$) node[above]{\i} -- ($(ab\i) - (0, 2pt)$);
+    }
+
+    \draw[arw, ->] (0, -8.5em) node[left]{$[0001]$} -- (0.5, -8.5em);
+    \draw[arw, ->] (0, -10em) node[left]{$[0101]$} -- (2, -10em);
+    \draw[arw, ->] (2, -10em) -- (2.5, -10em);
+    \draw[arw, ->] (0, -11.5em) node[left]{$[1011]$} -- (4, -11.5em);
+    \draw[arw, ->] (4, -11.5em) -- (5, -11.5em);
+    \draw[arw, ->] (5, -11.5em) -- (5.5, -11.5em);
+    \draw[arw, ->] (0, -13em) node[left]{$[1111]$} -- (4, -13em);
+    \draw[arw, ->] (4, -13em) -- (6, -13em);
+    \draw[arw, ->] (6, -13em) -- (7, -13em);
+    \draw[arw, ->] (7, -13em) -- (7.5, -13em);
+
+    \draw ($(A) + (0, 2pt)$) node[above]{0} -- (0, -13em-2mm);
+    \draw (ab1) -- (0.5, -8.5em);
+    \draw (ab5) -- (2.5, -10em);
+    \draw (ab11) -- (5.5, -11.5em);
+    \draw (ab15) -- (7.5, -13em);
+\end{tikzfig}
+
+考虑 $w$ 位所能表示的范围，最小值是用位向量 $[00\cdots0]$ 表示，也就是整数值 0, 而最大值是用位向量 $[11\cdots1]$ 表示，也就是整数值 $UMax_w \doteq \sum\limits_{i=0}^{w-1}2^i = 2^w - 1$ 。因此，函数 $B2U_w$ 能够被定义为一个映射 $B2U_w: \{0, 1\}^w \rightarrow \{0, \dots, UMax_w\}$。
+
+无符号数的二进制表示有一个重要的属性，也就是每个介于 $0 \~{} 2^w-1$ 之间的数都有一个 $w$ 位的值编码。
+
 \begin{theorem}[Uniqueness of unsigned encoding]
     Function $B2U_w$ is a bijection.
 \end{theorem}
