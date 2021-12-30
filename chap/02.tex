@@ -178,7 +178,7 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     \coordinate (B) at (8, -7em);
     \draw (A) -- (B);
 
-    \foreach \i in {1, 2, ..., 16} {
+    \foreach \i in {0, 1, 2, ..., 16} {
         \coordinate (ab\i) at ($(A)!\i/16!(B)$);
         \draw ($(ab\i) + (0, 2pt)$) node[above]{\i} -- ($(ab\i) - (0, 2pt)$);
     }
@@ -194,7 +194,7 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     \draw[arw, ->] (6, -13em) -- (7, -13em);
     \draw[arw, ->] (7, -13em) -- (7.5, -13em);
 
-    \draw ($(A) + (0, 2pt)$) node[above]{0} -- (0, -13em-2mm);
+    \draw (A) -- (0, -13em-2mm);
     \draw (ab1) -- (0.5, -8.5em);
     \draw (ab5) -- (2.5, -10em);
     \draw (ab11) -- (5.5, -11.5em);
@@ -235,12 +235,11 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     \coordinate (B) at (4, -7em);
     \draw (A) -- (B);
 
-    \foreach \i in {1, 2, ..., 16} {
+    \foreach \i in {0, 1, 2, ..., 16} {
         \coordinate (ab\i) at ($(A)!\i/16!(B)$);
         \pgfmathtruncatemacro{\j}{\i - 8};
         \draw ($(ab\i) + (0, 2pt)$) node[above]{\j} -- ($(ab\i) - (0, 2pt)$);
     }
-    \draw ($(A) + (0, 2pt)$) node[above]{-8} -- ($(A) - (0, 2pt)$);
 
     \draw (-4, -8.5em) node[left]{$[0001]$};
     \draw[rarw, ->] (0, -8.5em) -- (0.5, -8.5em);
