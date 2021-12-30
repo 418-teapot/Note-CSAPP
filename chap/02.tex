@@ -206,5 +206,75 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
 
 \begin{theorem}[Uniqueness of unsigned encoding]
     Function $B2U_w$ is a bijection.
+
+    Vice versa, function $U2B_w$ is a bijection.
+\end{theorem}
+
+\section{补码编码}
+
+补码编码的原理：让 the most significant bit 拥有 negative weight。
+
+\begin{definition}[Two's-complement encoding]
+    For vector $\vec{x} = [x_{w-1}, x_{w-2}, \dots, x_0]$ :
+    \begin{equation}
+        B2T_w(\vec{x}) \doteq -x_{w-1}2^{w-1} + \sum\limits_{i=0}^{w-2}x_i2^i
+    \end{equation}
+\end{definition}
+
+\begin{tikzfig}
+    \tikzset{rarw/.style={>={Triangle[length=1.5mm, width=4mm]}, line width=4mm, draw=White!30!Cerulean}};
+    \tikzset{larw/.style={>={Triangle[length=1.5mm, width=4mm]}, line width=4mm, draw=White!30!gray}};
+    \draw[larw, ->] (0, 0) node[right]{$-2^3=-8$} -- (-4, 0);
+    \draw[rarw, ->] (0, -1.5em) node[left]{$2^2=4$} -- (2, -1.5em);
+    \draw[rarw, ->] (0, -3em) node[left]{$2^1=2$} -- (1, -3em);
+    \draw[rarw, ->] (0, -4.5em) node[left]{$2^0=1$} -- (0.5, -4.5em);
+
+    \coordinate (A) at (-4, -7em);
+    \coordinate (B) at (4, -7em);
+    \draw (A) -- (B);
+
+    \foreach \i in {1, 2, ..., 16} {
+        \coordinate (ab\i) at ($(A)!\i/16!(B)$);
+        \pgfmathtruncatemacro{\j}{\i - 8};
+        \draw ($(ab\i) + (0, 2pt)$) node[above]{\j} -- ($(ab\i) - (0, 2pt)$);
+    }
+    \draw ($(A) + (0, 2pt)$) node[above]{-8} -- ($(A) - (0, 2pt)$);
+
+    \draw (-4, -8.5em) node[left]{$[0001]$};
+    \draw[rarw, ->] (0, -8.5em) -- (0.5, -8.5em);
+    \draw (-4, -10em) node[left]{$[0101]$};
+    \draw[rarw, ->] (0, -10em) -- (2, -10em);
+    \draw[rarw, ->] (2, -10em) -- (2.5, -10em);
+    \coordinate (C) at ($(-4, -10em) - (0, 4mm)$);
+    \draw (C) node[left]{$[1011]$};
+    \draw[larw, <-] (C) -- ++(4, 0);
+    \begin{scope}[transparency group, opacity=0.75]
+        \draw[rarw, ->] ($(C) - (0, 2mm)$) -- ++(1, 0);
+        \draw[rarw, ->] ($(C) - (-1, 2mm)$) -- ++(0.5, 0);
+    \end{scope}
+    \coordinate (D) at ($(C) - (0, 2mm) - (0, 1.5em)$);
+    \draw (D) node[left]{$[1111]$};
+    \draw[larw, <-] (D) -- ++(4, 0);
+    \begin{scope}[transparency group, opacity=0.75]
+        \draw[rarw, ->] ($(D) - (0, 2mm)$) -- ++(2, 0);
+        \draw[rarw, ->] ($(D) - (-2, 2mm)$) -- ++(1, 0);
+        \draw[rarw, ->] ($(D) - (-3, 2mm)$) -- ++(0.5, 0);
+    \end{scope}
+
+    \draw (ab3) -- ($(C) - (-1.5, 2mm)$);
+    \draw (ab7) -- ($(D) - (-3.5, 2mm)$);
+    \draw (ab8) -- ($(D) - (-4, 4mm)$);
+    \draw (ab9) -- (0.5, -8.5em);
+    \draw (ab13) -- (2.5, -10em);
+\end{tikzfig}
+
+考虑 $w$ 位补码所能表示的值的范围。它能表示的最小值是位向量 $[10\cdots0]$，其整数值为 $TMin_w \doteq -2^{w-1}$。而最大值是位向量 $[01\cdots1]$，其整数值为 $TMax_w \doteq \sum\limits_{i=0}^{w-2}2^i = 2^{w-1} - 1$。
+
+同无符号一样，在可表示的取值范围内的每个数字都有一个唯一的 $w$ 位的补码编码。
+
+\begin{theorem}[Uniqueness of two's-complement encoding]
+    Function $B2T_w$ is a bijection.
+
+    Vice versa, function $T2B_w$ is a bijection.
 \end{theorem}
 \endinput
