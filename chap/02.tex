@@ -161,6 +161,7 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     For vector $\vec{x} = [x_{w-1}, x_{w-2}, \dots, x_0]$ :
     \begin{equation}
         B2U_w(\vec{x}) \doteq \sum\limits_{i=0}^{w-1} x_i 2^i
+        \label{def:b2u}
     \end{equation}
 \end{definition}
 
@@ -218,6 +219,7 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     For vector $\vec{x} = [x_{w-1}, x_{w-2}, \dots, x_0]$ :
     \begin{equation}
         B2T_w(\vec{x}) \doteq -x_{w-1}2^{w-1} + \sum\limits_{i=0}^{w-2}x_i2^i
+        \label{def:b2t}
     \end{equation}
 \end{definition}
 
@@ -277,4 +279,31 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
 
     Vice versa, function $T2B_w$ is a bijection.
 \end{theorem}
+
+\section{有符号数和无符号数之间的转换}
+
+将函数 $T2U_w$ 定义为 $T2U_w(x) \doteq B2U_w(T2B_w(x))$。这个函数的输入是一个 $TMin_w \~{} TMax_w$ 的数，输出是一个 $0 \~{} UMax_w$ 的值，输入和输出有相同的位表示。类似的，有函数 $U2T_w(x) \doteq B2T_w(U2B_w(x))$。
+
+\begin{theorem}[Conversion from two's complement to unsigned]
+    For $x$ such that $TMin \leq x \leq TMax_w$:
+    \begin{equation}
+        T2U_w(x) = \left\{
+        \begin{array}{ll}
+            x + 2^w, & x < 0 \\
+            x, & x \geq 0
+        \end{array}
+        \right.
+        \label{thm:t2u}
+    \end{equation}
+\end{theorem}
+
+\begin{proof}[Conversion from two's complement to unsigned]
+    Comparing Equations \eqref{def:b2u} and \eqref{def:b2t}, we can see that for bit pattern $\vec{x}$, if we compute the difference $B2U_w(\vec{x}) - B2T_w(\vec{x})$, the weighted sums for bits from $0$ to $w - 2$ will cancel each other, leaving a value $B2U_w(\vec{x}) - B2T_w(\vec{x}) = x_{w-1}(2^{w-1} - -2^{w-1}) = x_{w-1} 2^w$. This gives a relationship $B2U_w(\vec{x}) = B2T_w(\vec{x}) + x_{w-1}2^w$. We therefore have
+    \begin{equation}
+        B2U_w(T2B_w(x)) = T2U_w(x) = x + x_{w-1}w^2
+        \label{proof:t2u}
+    \end{equation}
+    In a two's complement representation of $x$, bit $x_{w-1}$ determines whether or not $x$ is negative, giving the two cases of Equation \eqref{thm:t2u}.
+\end{proof}
+
 \endinput
