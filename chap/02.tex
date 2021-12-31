@@ -449,4 +449,56 @@ This theorem can be seen to follow directly from the definition of the unsigned 
     of adding a bit of weight $-2^w$ and of converting the bit having weight $-2^{w-1}$ to be
     one with weight $2^{w-1}$ is to preserve the original numeric value.
 \end{proof}
+
+\subsection{截断数字}
+
+当将一个 $w$ 位的数 $\vec{x} = [x_{w-1}, x_{w-2}, \dots, x_0]$ 截断为一个 $k$ 位数字时，会丢弃高 $w-k$ 位，得到一个位向量 $\vec{x}' = [x_{k-1}, x_{k-2}, \dots, x_0]$。截断一个数字可能会改变它的值——溢出的一种形式。对于一个无符号数，可以很容易得出其数值结果。
+
+\begin{theorem}[Truncation of an unsigned number]
+    Let $\vec{x}$ be the bit vector $[x_{w-1}, x_{w-2}, \dots, x_0]$, and let $\vec{x}$ be the result of truncating it to $k$ bits: $\vec{x}' = [x_{k-1}, x_{k-2}, \dots, x_0]$. Let $x = B2U_w(\vec{x})$ and $x' = B2U_k(\vec{x}')$. The $x' = x \bmod 2^k$.
+\end{theorem}
+
+该定理背后的直觉就是所有被截取的位其权重形式都为 $2^i$，其中 $i \geq k$，因此，每一个权在取模操作下结果都为零。
+
+\begin{proof}[Truncation of an unsigned number]
+    Applying the modulus operation to Equation \eqref{def:b2u} yields
+    \begin{align*}
+        B2U_w(x_{w-1}, x_{w-2}, \dots, x_0]) \bmod 2^k & = \Bigl[\sum\limits_{i=0}^{w-1}x_i2^i\Bigr] \bmod 2^k \\
+        & = \Bigl[\sum\limits_{i=0}^{k-1}x_i2^i\Bigr] \bmod 2^k \\
+        & = \sum\limits_{i=0}^{k-1}x_i2^i \\
+        & = B2U_k([x_{k-1}, x_{k-2}, \dots, x_0])
+    \end{align*}
+    In this derivation, we make use of the property that $2^i \bmod 2^k = 0$ for any $i \geq k$.
+\end{proof}
+
+补码截断也具有类似的属性，只不过要将最高位转换为符号位。
+
+\begin{theorem}[Truncation of a two's complement number]
+    Let $\vec{x}$ be the bit vector $[x_{w-1}, x_{w-2}, \dots, x_0]$, and let $\vec{x}'$ be the reuslt of truncating it to $k$ bits: $\vec{x}' = [x_{k-1}, x_{k-2}, \dots, x_0]$. Let $ x= B2T_w(\vec{x})$ and $x' = B2T_k(\vec{x}')$. The $x' = U2T_k(x \bmod 2^k)$.
+\end{theorem}
+
+在这个公式中，$x \bmod 2^k$ 将是 $0 \~{} 2^{k-1}$ 之间的一个数。对其应用函数 $U2T_k$ 产生的结果是把最高有效位 $x_{k-1}$ 的权重从 $2_{k-1}$ 转变为 $-2^{k-1}$。
+
+\begin{proof}[Truncation of a two's complement number]
+    Using a similar argument to the one we used for truncation of an unsigned number shows that
+    \[
+        B2T_w([x_{w-1}, x_{w-2}, \dots, x_0]) \bmod 2^k = B2U_k([x_{k-1}, x_{k-2}, \dots, x_0])
+    \]
+    That is, $x \bmod 2^k$ can be be represented by an unsigned number having bit-level representation $[x^{k-1}, x^{k-2}, \dots, x_0]$. Converting this to a two’s-complement number gives $x' = U2T_k(x \bmod 2^k)$.
+\end{proof}
+
+总而言之，无符号数的截断结果是：
+\begin{equation}
+    B2U_k[x_{k-1}, x_{k-2}, \dots, x_0] = B2U_w([x_{w-1}, x_{w-2}, \dots, x_0]) \bmod 2^k
+    \label{eq:truncu}
+\end{equation}
+补码的截断结果是：
+\begin{equation}
+    B2T_k[x_{k-1}, x_{k-2}, \dots, x_0] = U2T_k(B2U_w([x_{w-1}, x_{w-2}, \dots, x_0]) \bmod 2^k)
+    \label{eq:truncs}
+\end{equation}
+
+\subsection{关于有符号数与无符号数的建议}
+
+有符号数到无符号数的隐式强制类型转换导致了某些非直观的行为。而这些非直观的特性经常导致程序错误，并且这种包含隐式强制类型转换的细微差别的错误很难被发现。
 \endinput
