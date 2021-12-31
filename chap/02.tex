@@ -501,4 +501,93 @@ This theorem can be seen to follow directly from the definition of the unsigned 
 \subsection{关于有符号数与无符号数的建议}
 
 有符号数到无符号数的隐式强制类型转换导致了某些非直观的行为。而这些非直观的特性经常导致程序错误，并且这种包含隐式强制类型转换的细微差别的错误很难被发现。
+
+\section{整数运算}
+
+\subsection{无符号加法}
+
+考虑两个非负整数 $x$ 和 $y$，满足 $0 \leq x, y < 2^w$。每个数都能表示为 $w$ 位无符号数字。然而，如果计算它们的和，可能的范围就为 $0 \leq x + y \leq 2^{w+1} - 2$。表示这个和可能需要 $w+1$ 位，超过了 $w$ 位的表示范围，需要将超过的位数丢弃。
+
+\begin{theorem}[Unsigned addition]
+    For $x$ and $y$ such that $0 \leq x, y < 2^w$:
+    \begin{equation}
+        x +_w^u y = \left\{
+        \begin{array}{lll}
+            x + y, & x + y < 2^w & Normal \\
+            x + y - 2^w, & 2^w \leq x+y < 2^{w+1} & Overflow
+        \end{array}
+        \right.
+        \label{thm:addu}
+    \end{equation}
+\end{theorem}
+
+下图说明了 Equation \eqref{thm:addu} 的这两种情况。
+
+\begin{tikzfig}
+    \tikzset{barw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!Cerulean}};
+    \tikzset{garw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!gray}};
+    \coordinate (A0) at (0, 3);
+    \coordinate (B0) at (0, 1.5);
+    \coordinate (C0) at (0, 0);
+    \coordinate (A1) at (3, 1.5);
+    \coordinate (B1) at (3, 0);
+    \draw (A0) node[left]{$2^{w+1}$};
+    \draw (A0) node[above]{$x+y$};
+    \draw (B0) node[left]{$2^w$};
+    \draw (C0) node[left]{$0$};
+    \draw (A1) node[above]{$x+^uy$};
+    \draw ($(A0) - (2pt, 0)$) -- ($(A0) + (2pt, 0)$);
+    \draw ($(B0) - (2pt, 0)$) -- ($(B0) + (2pt, 0)$);
+    \draw ($(C0) - (2pt, 0)$) -- ($(C0) + (2pt, 0)$);
+    \draw ($(A1) - (2pt, 0)$) -- ($(A1) + (2pt, 0)$);
+    \draw ($(B1) - (2pt, 0)$) -- ($(B1) + (2pt, 0)$);
+    \draw (A0) -- (C0);
+    \draw (A1) -- (B1);
+
+    \coordinate (D0) at ($(A0)!1/2!(B0)$);
+    \coordinate (D1) at ($(A1)!1/2!(B1)$);
+    \coordinate (E0) at ($(C0)!1/3!(B1)$);
+    \coordinate (E1) at ($(C0)!2/3!(B1)$);
+    \coordinate (F0) at ($(B0)!1/3!(C0)$);
+    \coordinate (F1) at ($(A1)!1/3!(B1)$);
+    \draw[garw, ->] (D0) -- (E0 |- D0) node[above]{Overflow} -- (E1 |- D1) -- (D1);
+    \begin{scope}[transparency group, opacity=0.75]
+        \draw[barw, ->] (F0) -- (E0 |- F0) node[below]{Normal} -- (F1);
+    \end{scope}
+\end{tikzfig}
+
+\begin{proof}[Unsigned addition]
+    In general, we can see that if $x + y < 2^w$, the leading bit in the ($w + 1$)-bit representation of the sum will equal $0$, and hence discarding it will not change the numeric value. On the other hand, if $2^w \leq x + y < 2^{w+1}$, the leading bit in the ($w + 1$)-bit representation of the sum will equal $1$, and hence discarding it is equivalent to subtracting $2^w$ from the sum.
+\end{proof}
+
+说一个算术运算溢出，是指完整的整数结果不能存放到数据类型的字长限制中去。如 Equation \eqref{thm:addu} 所示，当两个操作数的和为 $2^w$ 或者更大时，就发生了溢出。
+
+当执行 C 程序时，不会将溢出作为错误而发出信号。不过有的时候，我们可能希望判定是否发出了溢出。
+
+\begin{theorem}[Detecting overflow of unsigned addition]
+    For $x$ and $y$ in the range $0 \leq x, y \leq UMax_w$, let $s \doteq x +_w^u y$. Then the computation of $s$ overflowed if and only if $s < x$ (or equivalently, $s < y$).
+\end{theorem}
+
+\begin{proof}[Detecting overflow of unsigned addition]
+    Observe that $x + y \geq x$, and hence if $s$ did not overflow, we will surely have $s \geq x$. On the other hand, if $s$ did overflow, we have $s = x + y - 2^w$. Given that $y < 2^w$, we have $y - 2^w < 0$, and hence $s = x + (y - 2^w) < x$.
+\end{proof}
+
+模数加法是一个阿贝尔群（Abelian group），具有可交换和可结合的性质。它有一个单位元 $0$，并且每个元素有一个加法逆元。考虑 $w$ 位的无符号数的集合，执行加法运算 $+^u_w$。对于每个值 $x$，必然有某个值 $-^u_wx$ 满足 $-^u_wx +^u_wx = 0$。
+
+\begin{theorem}[Unsigned negation]
+    For any number $x$ such that $0 \leq x < 2^w$, its $w$-bit unsigned negation $-^u_wx$ is given by following:
+    \begin{equation}
+        -^u_wx = \left\{
+        \begin{array}{ll}
+            x, & x = 0 \\
+            2^w - x, & x > 0
+        \end{array}
+        \right.
+        \label{thm:negu}
+    \end{equation}
+\end{theorem}
+
+\begin{proof}[Unsigned negation]
+    When $x = 0$, the additive inverse is clearly $0$. For $x > 0$, consider the value $2^w - x$. Observe that this number is in the range $ 0 < 2^w - x < 2^w$. We can also see that $(x + 2^w -x ) \bmod 2^w = 2^w \bmod 2^w = 0$. Hence it is the inverse of $x$ under $+^u_w$.
+\end{proof}
 \endinput
