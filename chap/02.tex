@@ -513,8 +513,8 @@ This theorem can be seen to follow directly from the definition of the unsigned 
     \begin{equation}
         x +_w^u y = \left\{
         \begin{array}{lll}
-            x + y, & x + y < 2^w & Normal \\
-            x + y - 2^w, & 2^w \leq x+y < 2^{w+1} & Overflow
+            x + y, & x + y < 2^w & \text{Normal} \\
+            x + y - 2^w, & 2^w \leq x+y < 2^{w+1} & \text{Overflow}
         \end{array}
         \right.
         \label{thm:addu}
@@ -589,5 +589,110 @@ This theorem can be seen to follow directly from the definition of the unsigned 
 
 \begin{proof}[Unsigned negation]
     When $x = 0$, the additive inverse is clearly $0$. For $x > 0$, consider the value $2^w - x$. Observe that this number is in the range $ 0 < 2^w - x < 2^w$. We can also see that $(x + 2^w -x ) \bmod 2^w = 2^w \bmod 2^w = 0$. Hence it is the inverse of $x$ under $+^u_w$.
+\end{proof}
+
+\subsection{补码加法}
+
+对于补码加法，需要确定当结果太大或者太小时的处理方式。给定在范围 $-2^{w-1} \leq x, y \leq 2^{w-1}$ 之内的整数值 $x$ 和 $y$，它们的和就在范围 $-2^w \leq x + y \leq 2^w - 2$ 之内，要想准确表示，可能需要 $w + 1$ 位。需要将二进制表示阶段到 $w$ 位，来避免数据大小的不断扩张。
+
+\begin{theorem}[Two's-complement addition]
+    For integer values $x$ and $y$ in the range $-2^{w-1} \leq x, y \leq 2^{w-1}-1$:
+    \begin{equation}
+        x +^t_w y = \left\{
+        \begin{array}{lll}
+            x + y - 2^w, & 2^{w-1} \leq x + y & \text{Positive overflow} \\
+            x + y, & -2^{w-1} \leq x + y < 2^{w-1} & \text{Nromal} \\
+            x + y + 2^w, & x + y < -2^{w-1} & \text{Negative overflow}
+        \end{array}
+        \right.
+        \label{thm:adds}
+    \end{equation}
+\end{theorem}
+
+下图说明了这个定理。当和 $x+y$ 超过 $TMax_w$ 时，发生了正溢出，这种情况下，截断的结果是从和中减去 $2^w$；当和 $x+y$ 小于 $TMin_w$ 时，发生了负溢出，这种情况下，截断的结果是把和加上 $2^w$。
+
+\begin{tikzfig}
+    \tikzset{barw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!Cerulean}};
+    \tikzset{garw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!gray}};
+    \coordinate (A) at (0, 3);
+    \coordinate (B) at (0, -3);
+    \coordinate (C) at (3, 1.5);
+    \coordinate (D) at (3, -1.5);
+
+    \foreach \i in {0, 1, 2, 3, 4} {
+        \coordinate (ab\i) at ($(A)!\i/4!(B)$);
+        \draw ($(ab\i) - (2pt, 0)$) -- ($(ab\i) + (2pt, 0)$);
+    }
+
+    \foreach \i in {0, 1, 2} {
+        \coordinate (cd\i) at ($(C)!\i/2!(D)$);
+        \draw ($(cd\i) - (2pt, 0)$) -- ($(cd\i) + (2pt, 0)$);
+    }
+
+    \draw (ab0) node[above]{$x+y$};
+    \draw (ab0) node[left]{$+2^w$};
+    \draw (ab1) node[left]{$+2^{w-1}$};
+    \draw (ab2) node[left]{$0$};
+    \draw (ab2) node[right]{Normal};
+    \draw (ab3) node[left]{$-2^{w-1}$};
+    \draw (ab4) node[left]{$-2^w$};
+    \draw (cd0) node[above]{$x+^ty$};
+    \draw (cd0) node[right]{$+2^{w-1}$};
+    \draw (cd1) node[right]{$0$};
+    \draw (cd2) node[right]{$-2^{w-1}$};
+    \draw (A) -- (B);
+    \draw (C) -- (D);
+
+    \coordinate (E0) at ($(ab1)!1/2!(ab2)$);
+    \coordinate (E1) at ($(cd0)!1/2!(cd1)$);
+    \coordinate (F0) at ($(ab2)!1/2!(ab3)$);
+    \coordinate (F1) at ($(cd1)!1/2!(cd2)$);
+    \coordinate (G0) at ($(ab0)!1/2!(ab1)$);
+    \coordinate (G1) at ($(cd1)!2/3!(cd2)$);
+    \coordinate (H0) at ($(ab3)!1/2!(ab4)$);
+    \coordinate (H1) at ($(cd0)!2/3!(cd1)$);
+    \coordinate (T0) at ($(ab2)!1/3!(cd1)$);
+    \coordinate (T1) at ($(ab2)!2/3!(cd2)$);
+
+    \draw (G0) node[left, xshift=-3em]{Case 4};
+    \draw (H0) node[left, xshift=-3em]{Case 3};
+    \draw (E0) node[left, xshift=-3em]{Case 2};
+    \draw (F0) node[left, xshift=-3em]{Case 1};
+    \draw (T0 |- G0) node[above, xshift=2em, yshift=0.4em]{Positive overflow};
+    \draw (T0 |- H0) node[below, xshift=2em, yshift=-0.4em]{Negative overflow};
+
+    \draw[garw, ->, draw=White!30!Black] (G0) -- (T0 |- G0) -- (T1 |- G1) -- (G1);
+    \begin{scope}[transparency group, opacity=0.75]
+        \draw[garw, ->] (H0) -- (T0 |- H0) -- (T1 |- H1) -- (H1);
+    \end{scope}
+    \begin{scope}[transparency group, opacity=0.75]
+        \draw[barw, ->] (E0) -- (E1);
+        \draw[barw, ->] (F0) -- (F1);
+    \end{scope}
+\end{tikzfig}
+
+两个数的 $w$ 位补码之和与无符号之和在二进制表示上完全相同。
+
+\begin{proof}[Two's-complement addition]
+    Since two’s-complement addition has the exact same bit-level representation as unsigned addition, we can characterize the operation $+^t_w$ as one of converting its arguments to unsigned, performing unsigned addition, and then converting back to two’s complement:
+    \[
+        x +^t_w y = U2T_w(T2U_w(x) +^u_w T2U_w(y))
+    \]
+
+    By Equation \eqref{proof:t2u} we can write $T2U_w(x)$ as $x_{w-1}2^w + x$ and $T2U_w(y)$ as $y_{w-1}2^w + y$. Using the property that $+_w$ the properties of modular addition, we then have
+    \begin{align*}
+        x +^t_w y & = U2T_w(T2U_w(x) +^u_w T2U_w(y)) \\
+                  & = U2T_w[(x_{w-1}2^w + x + y_{w-1}2^w + y) \bmod 2^w] \\
+                  & = U2T_w[(x + y) \bmod 2^w]
+    \end{align*}
+    The terms $x_{w−1}2^w$ and $y_{w−1}2^w$ drop out since they equal $0$ modulo $2^w$ .
+
+    To better understand this quantity, let us define $z$ as the integer sum $z \doteq x + y$, $z'$ as $z' \doteq z \bmod 2^w$, and $z''$ as $z'' \doteq U2T_w(z')$. The value $z''$ is equal to $x +^t_w y$. We can divide the analysis into four cases as illustrated in above Figure:
+    \begin{enumerate}
+        \item $-2^w \leq z < -2^{w-1}$. Then we will have $z' = z + 2^w$. This gives $0 \leq z' < -2^{w-1} + 2^w = 2^{w-1}$. Examining Equation \eqref{thm:u2t}, we see that $z'$ is in the range sunch that $z'' = z'$. This is the of negative overflow. We have added two negative numbers $x$ and $y$ (that’s the only way we can have $z < −2^{w−1}$) and obtained a nonnegative result $z''  = x + y + 2^w$.
+        \item $-2^{w-1} \leq z < 0$. Then we will again have $z' = z + 2^w$, giving $-2^{w-1} + 2^w = 2^{w-1} \leq z' < 2^w$. Examining Equation \eqref{thm:u2t}, we see that $z'$ is in such a range that $z'' = z' - 2^w$, and therefore $z'' = z' - 2^w = z + 2^w - 2^w = z$. That is, our two’s-complement sum $z$ equals the integer sum $x + y$.
+        \item $0 \leq z < 2^{w-1}$. Then we will have $z' = z$, giving $0 \leq z' < 2^{w−1}$, and hence $z'' = z' = z$. Again, the two’s-complement sum $z$ equals the integer sum $x + y$.
+        \item $2^{w-1} \leq z < 2^w$. We will again have $z' = z$, giving $2^{w−1} \leq z' < 2^w$. But in this range we have $z'' = z' − 2^w$, giving $z'' = x + y − 2^w$. This is the case of positive overflow. We have added two positive numbers $x$ and $y$ (that’s the only way we can have $z \geq 2^{w−1}$) and obtained a negative result $z'' = x + y − 2^w$.
+    \end{enumerate}
 \end{proof}
 \endinput
