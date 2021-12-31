@@ -151,11 +151,11 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     \end{tabular}
 \end{table}
 
-\section{整型数据类型}
+\subsection{整型数据类型}
 
 略。
 
-\section{无符号数的编码}
+\subsection{无符号数的编码}
 
 \begin{definition}[Unsigned encoding]
     For vector $\vec{x} = [x_{w-1}, x_{w-2}, \dots, x_0]$ :
@@ -211,7 +211,7 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     Vice versa, function $U2B_w$ is a bijection.
 \end{theorem}
 
-\section{补码编码}
+\subsection{补码编码}
 
 补码编码的原理：让 the most significant bit 拥有 negative weight。
 
@@ -279,7 +279,7 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     Vice versa, function $T2B_w$ is a bijection.
 \end{theorem}
 
-\section{有符号数和无符号数之间的转换}
+\subsection{有符号数和无符号数之间的转换}
 
 将函数 $T2U_w$ 定义为 $T2U_w(x) \doteq B2U_w(T2B_w(x))$。这个函数的输入是一个 $TMin_w \~{} TMax_w$ 的数，输出是一个 $0 \~{} UMax_w$ 的值，输入和输出有相同的位表示。类似的，有函数 $U2T_w(x) \doteq B2T_w(U2B_w(x))$。
 
@@ -305,4 +305,148 @@ C 语言中的 \verb|>>| 运算符对于有符号数是算术右移，对于无�
     In a two's complement representation of $x$, bit $x_{w-1}$ determines whether or not $x$ is negative, giving the two cases of Equation \eqref{thm:t2u}.
 \end{proof}
 
+下图说明了函数 $T2U$ 的一般行为。如图所示，当将一个有符号数映射为它相应的无符号数时，负数就被转换成了大的正数，而非负数会保持不变。
+
+\begin{tikzfig}
+    \tikzset{barw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!Cerulean}};
+    \tikzset{garw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!gray}};
+    \coordinate (A0) at (0, 1.5);
+    \coordinate (B0) at (0, 0);
+    \coordinate (C0) at (0, -1.5);
+    \coordinate (A1) at (3, 3);
+    \coordinate (B1) at (3, 1.5);
+    \coordinate (C1) at (3, 0);
+    \draw (A0) node[left] {$+2^{w-1}$};
+    \draw (B0) node[left] {$0$};
+    \draw (B0) node[left, align=right, xshift=-6em] {Two's\\[-0.3em]complement};
+    \draw (C0) node[left] {$-2^{w-1}$};
+    \draw (A0) -- (C0);
+    \draw ($(A0) - (2pt, 0)$) -- ($(A0) + (2pt, 0)$);
+    \draw ($(B0) - (2pt, 0)$) -- ($(B0) + (2pt, 0)$);
+    \draw ($(C0) - (2pt, 0)$) -- ($(C0) + (2pt, 0)$);
+    \draw (A1) node[right] {$2^w$};
+    \draw (B1) node[right] {$2^{w-1}$};
+    \draw (B1) node[right, xshift=6em] {Unsigned};
+    \draw (C1) node[right] {$0$};
+    \draw (A1) -- (C1);
+    \draw ($(A1) - (2pt, 0)$) -- ($(A1) + (2pt, 0)$);
+    \draw ($(B1) - (2pt, 0)$) -- ($(B1) + (2pt, 0)$);
+    \draw ($(C1) - (2pt, 0)$) -- ($(C1) + (2pt, 0)$);
+    \coordinate (D0) at ($(A0)!1/2!(B0)$);
+    \coordinate (D1) at ($(B1)!1/2!(C1)$);
+    \coordinate (E0) at ($(D0)!1/3!(D1)$);
+    \coordinate (E1) at ($(D0)!2/3!(D1)$);
+    \coordinate (F0) at ($(B0)!1/2!(C0)$);
+    \coordinate (F1) at ($(A1)!1/2!(B1)$);
+    \draw[garw, ->] (F0) -- (E0 |- F0) -- (E1 |- F1) -- (F1);
+    \begin{scope}[transparency group, opacity=0.75]
+        \draw[barw, ->] (D0) -- (D1);
+    \end{scope}
+\end{tikzfig}
+
+反过来看，无符号数 $u$ 和与之对应的有符号数 $U2T_w{u}$ 之间的关系：
+
+\begin{theorem}[Unsigned to two's complement conversion]
+    For $u$ such that $0 \leq u \leq UMax_w$ :
+    \begin{equation}
+        U2T_w(u) = \left\{
+        \begin{array}{ll}
+            u, & u \leq TMax_w \\
+            u - 2^w, & u > TMax_w
+        \end{array}
+        \right.
+    \label{thm:u2t}
+    \end{equation}
+\end{theorem}
+
+\begin{proof}[Unsigned to two's complement conversion]
+    Let $\vec{u} = U2B_w(u)$. This bit vector will also be the two’s-complement representation of $U2T_w(u)$. Equations \eqref{def:b2u} and \eqref{def:b2t} can be combiened to give
+    \begin{equation}
+        U2T_w(u) = -u_{w-1}2^w + u
+    \end{equation}
+    In ths unsigned representation of $u$, bit $u_{w-1}$ determines whether or not $u$ is greater than $TMax_w = 2^{w-1} - 1$, giving the tow cases of Equation \eqref{thm:u2t}.
+\end{proof}
+
+下图说明了函数 $U2T$ 的行为。对于小的数($\leq TMax_w$)，从无符号到有符号的转换将保留数字的原值。对于大的数($> TMax_w$)，数字将转换为一个负数值。
+
+\begin{tikzfig}
+    \tikzset{barw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!Cerulean}};
+    \tikzset{garw/.style={>={Triangle[length=2.5mm, width=6mm]}, line width=4mm, draw=White!30!gray}};
+    \coordinate (A0) at (0, 1.5);
+    \coordinate (B0) at (0, 0);
+    \coordinate (C0) at (0, -1.5);
+    \coordinate (A1) at (3, 0);
+    \coordinate (B1) at (3, -1.5);
+    \coordinate (C1) at (3, -3);
+    \draw (A0) node[left] {$2^w$};
+    \draw (B0) node[left] {$2^{w-1}$};
+    \draw (B0) node[left, xshift=-6em] {Unsigned};
+    \draw (C0) node[left] {$0$};
+    \draw (A0) -- (C0);
+    \draw ($(A0) - (2pt, 0)$) -- ($(A0) + (2pt, 0)$);
+    \draw ($(B0) - (2pt, 0)$) -- ($(B0) + (2pt, 0)$);
+    \draw ($(C0) - (2pt, 0)$) -- ($(C0) + (2pt, 0)$);
+    \draw (A1) node[right] {$+2^{w-1}$};
+    \draw (B1) node[right] {$0$};
+    \draw (B1) node[right, xshift=6em, align=left] {Two's\\[-0.3em]complement};
+    \draw (C1) node[right] {$-2^{w-1}$};
+    \draw (A1) -- (C1);
+    \draw ($(A1) - (2pt, 0)$) -- ($(A1) + (2pt, 0)$);
+    \draw ($(B1) - (2pt, 0)$) -- ($(B1) + (2pt, 0)$);
+    \draw ($(C1) - (2pt, 0)$) -- ($(C1) + (2pt, 0)$);
+    \coordinate (D0) at ($(B0)!1/2!(C0)$);
+    \coordinate (D1) at ($(A1)!1/2!(B1)$);
+    \coordinate (E0) at ($(D0)!1/3!(D1)$);
+    \coordinate (E1) at ($(D0)!2/3!(D1)$);
+    \coordinate (F0) at ($(A0)!1/2!(B0)$);
+    \coordinate (F1) at ($(B1)!1/2!(C1)$);
+    \draw[garw, ->] (F0) -- (E0 |- F0) -- (E1 |- F1) -- (F1);
+    \begin{scope}[transparency group, opacity=0.75]
+        \draw[barw, ->] (D0) -- (D1);
+    \end{scope}
+\end{tikzfig}
+
+\subsection{C 语言中的有符号数与无符号数}
+
+当声明一个像 \verb|12345| 或者 \verb|0x1A2B| 这样的常量时，这个值就被认为是有符号的。要创建一个无符号常量，必须加上后缀字符 ‘U’ 或者 ‘u’，例如，\verb|12345U| 或者 \verb|0x1A2Bu|。
+
+C 语言执行一个运算时，如果它的一个操作数是有符号的而另一个是无符号的，那么就会隐式地把有符号操作数强制类型转换为无符号数，并假设两个数都是非负的，来执行这个运算。
+
+\subsection{扩展一个数字的位表示}
+
+要将一个无符号转换为一个更大的数据类型，只需简单地在二进制表示添加 leading zeros。这种操作被称为零扩展（zero extension）。
+
+\begin{theorem}[Expansion of an unsigned number by zero externsion]
+    Define bit vectors $\vec{u} = [u_{w-1}, u_{w-2}, \dots, u_0]$ of width $w$ and $\vec{u}' = [0, \dots, 0, u_{w-1}, u_{w-2}, \dots, u_0]$ of width $w'$, where $w' > w$. Then $B2U_w(\vec{u}) = B2U_{w'}(\vec{u}')$.
+\end{theorem}
+
+This theorem can be seen to follow directly from the definition of the unsigned encoding, given by Equation \eqref{def:b2u}.
+
+要将一个补码数字转换为一个更大的数据类型，可以执行符号扩展（sign extension），在二进制表示添加 the most significant bit。
+
+\begin{theorem}[Expansion of a two's complement number by sign extension]
+    Define bit vectors $\vec{x} = [x_{w-1}, x_{w-2}, \dots, x_0]$ of width $w$ and $\vec{x}' = [x_{w-1}, \dots, x_{w-1}, x_{w-1}, x_{w-2}, \dots, x_0]$ of width $w'$. Then $B2T_w(\vec{x}) = B2T_{w'}(\vec{x}')$.
+\end{theorem}
+
+\begin{proof}[Expansion of a two's complement number by sign extension]
+    Let $w' = w + k$. What we want to prove is that
+    \[
+        B2T_{w+k}([\underbrace{x_{w-1}, \dots, x_{w-1}}_\text{$k$ times}, x_{w-1}, x_{w-2}, \dots, x_0]) = B2T_w([x_{w-1}, x_{w-2}, \dots, x_0])
+    \]
+    The proof follows by induction on $k$. That is, if we can prove that sign extending by 1 bit preserves the numeric value, then this property will hold when sign extending by an arbitray number of bits. Thus, the task reduces to proving that
+    \[
+        B2T_{w+1}([x_{w-1}, x_{w-1}, x_{w-2}, \dots, x_0]) = B2T_w([x_{w-1}, x_w{w-2}, \dots, x_0])
+    \]
+    Expanding the left-hand expression with Equation \eqref{def:b2t} gives the following:
+    \begin{align*}
+        B2T_{w+1}([x_{w-1}, x_{w-1}, x_{w-2}, \dots, x_0]) & = -x_{w-1}2^w + \sum\limits_{i=0}^{w-1}x_i2^i \\
+        & = -x_{w-1}2^w + x_{w-1}2^{w-1} + \sum\limits_{i=0}^{w-2}x_i2^i \\
+        & = -x_{w-1}(2^w - 2^{w-1}) + \sum\limits_{i=0}^{w-2}x_i2^i \\
+        & = -x_{w-1}2^{w-1} + \sum\limits_{i=0}^{w-2}x_i2^i \\
+        & = B2T_w([x_{w-1}, x_{w-2}, \dots, x_0])
+    \end{align*}
+    The key property we exploit is that $2^w - 2^{w-1} = 2^{w-1}$. Thus, the combined effect
+    of adding a bit of weight $-2^w$ and of converting the bit having weight $-2^{w-1}$ to be
+    one with weight $2^{w-1}$ is to preserve the original numeric value.
+\end{proof}
 \endinput
