@@ -79,8 +79,8 @@
 \declaretheoremstyle[
     headfont = {\bfseries\sffamily\footnotesize},
     notefont = {\normalfont},
-    notebraces = {}{},
-    bodyfont = {\itshape},
+    %notebraces = {}{},
+    bodyfont = {\normalfont}, %\itshape
     headpunct = {\newline},
     headformat = {
         \makebox[0pt][r] {\NAME\ \NUMBER\hspace{\marginparsep}}
@@ -122,9 +122,9 @@
 \let\endproof\relax
 \declaretheoremstyle[
     headfont={\small\scshape},
-    notefont={\normalfont},
-    notebraces = {}{},
-    bodyfont={\itshape},
+    notefont={\normalsize\normalfont},
+    %notebraces = {}{},
+    bodyfont={\normalfont}, %\itshape
     headpunct={\newline},
     headformat={%
         \makebox[0pt][r]{\NAME\hspace{\marginparsep}}\hskip-\spacelength{\NOTE}},
