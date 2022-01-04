@@ -824,4 +824,45 @@ This theorem can be seen to follow directly from the definition of the unsigned 
 \begin{definition}[Ceil of a number]
     For any real number $a$, define $\lceil a \rceil$ to be the unique integer $a'$ such that $a' - 1 < a \leq a'$.
 \end{definition}
+
+\begin{theorem}[Unsigend division by a power of 2]
+    For C variables \verb|x| and \verb|k| with unsigned values $x$ and $k$, such that $0 \leq k < w$, the C expression \verb|x >> k| yields the value $\lfloor x / 2^k \rfloor$.
+\end{theorem}
+
+\begin{proof}[Unsigned division by a power of 2]
+    Let $x$ be the unsigned integer represented by bit pattern $[x_{w-1}, x_{w-2}, \dots, x_0]$, and let $k$ in the range $0 \leq k < w$. Let $x'$ be the unsigned number with $w-k$-bit representation $[x_{w-1}, x_{w-2}, \dots, x_k]$, and let $x''$ be the unsigned number with $k$-bit representation $[x_{k-1}, \dots, x_0]$. We can therefore see that $x = 2^k x' + x''$, and that $0 \leq x'' < 2^k$. It therefore follows that $\lfloor x / 2^k \rfloor = x'$.
+
+    Performing a logical right shift of bit vector $[x_{w-1}, x_{w-2}, \dots, x_0]$ by $k$ yields the bit vector $[0, \dots, 0, x_{w-1}, x_{w-2}, \dots, x_0]$. This it vector has numeric value $x'$, which we have seen is the value that would result by computing the expression \verb|x >> k|.
+\end{proof}
+
+对于除以 2 的幂的补码除法来说，情况要稍微复杂一些，为了保证负数仍然为负，移位要执行的是算术右移。
+
+\begin{theorem}[Two's-complement division by a power of 2, rounding down]
+    Let C variables \verb|x| and \verb|k| have two’s-complement value $x$ and unsigned value $k$, respectively, such that $0 \leq k < w$. The C expression \verb|x >> k|, when the shift is performed arithmetically, yields the value $\lfloor x / 2^k \rfloor$.
+\end{theorem}
+
+\begin{proof}[Two's-complement division by a power of 2, rounding down]
+    Let $x$ be the two’s-complement integer represented by bit pattern $[x_{w−1}, x_{w−2}, \dots, x_0]$, and let $k$ be in the range $0 \leq k < w$. Let $x'$ be the two’s-complement number represented by the $w−k$ bits $[x_{w−1}, x_{w−2}, \dots, x_k]$, and let $x''$ be the unsigned number represented by the low-order $k$ bits $[x_{k−1}, \dots, x_0]$. By a similar analysis as the unsigned case, we have $x = 2^kx' + x''$ and $0 \leq x  < 2^k$, giving $x'' = \lfloor x / 2^k \rfloor$. Furthermore, observe that shifting bit vector $[x_{w−1}, x_{w−2}, \dots, x_0]$ right arithmetically by $k$ yields the bit vector $[x_{w−1}, \dots, x_{w−1}, x_{w−1}, x_{w−2}, \dots, x_k]$ which is the sign extension from $w − k$ bits to $w$ bits of $[x_{w−1}, x_{w−2}, \dots, x_k]$. Thus, this shifted bit vector is the two’s-complement representation of $\lfloor x / 2^k \rfloor$.
+\end{proof}
+
+对于 $x \geq 0$，变量 \verb|x| 的最高有效位是 0,所以效果与逻辑右移是一样的。因此，对于非负数来说，算术右移 $k$ 位与除以 $2^k$ 是一样的。对于负数而言，当需要舍入时，移位会导致结果向下舍入。需要调整策略来处理负数的情况。
+
+\begin{theorem}[Two's-complement division by a power of 2, rounding up]
+    Let C variables \verb|x| and \verb|k| have two’s-complement value $x$ and unsigned value $k$, respectively, such that $0 \leq k < w$. The C expression \verb|(x + (1 << k) - 1) >> k|, when the shift is performed arithmetically, yields the value $\lceil x / 2^k \rceil$.
+\end{theorem}
+
+\begin{proof}[Two's-complement division by a power of 2, rounding up]
+    To see that $\lceil x / y \rceil = \lfloor (x + y − 1)/y \rfloor$, suppose that $x = qy + r$, where $0 \leq r < y$, giving $(x + y − 1) / y = q + (r + y − 1) / y$, and so $\lfloor (x + y − 1) / y \rfloor = q + \lfloor (r + y − 1) / y \rfloor$. The latter term will equal $0$ when $r = 0$ and $1$ when $r > 0$. That is, by adding a bias of $y − 1$ to $x$ and then rounding the division downward, we will get $q $when $y$ divides $x$ and $q + 1$ otherwise.
+
+    Returning to the case where $y = 2^k$, the C expression \verb|x + (1 << k) - 1| yields the value $x + 2^k − 1$. Shifting this right arithmetically by $k$ therefore yields $\lceil x / 2^k \rceil$.
+\end{proof}
+
+综上，对于使用算术右移的补码机器，C 表达式 \verb|(x < 0 ? x + (1 << k) - 1 : x) >> k)| 将会计算数值 $x / 2^k$。
+
+同乘法不同，我们不能用除以 2 的幂的除法来表示除以任意常数 $K$ 的除法。
+
+\subsection{关于整数运算的最后思考}
+
+正如我们看到的，计算机执行的“整数”运算实际上是一种模运算形式。表示数字的有限字长限制了可能的值的取值范围，结果运算可能溢出。我们还看到，补码表示提供了一种既能表示负数也能表示正数的灵活方式，同时使用了与执行无符号算术相同的位级实现，这些运算包括像加法、减法、乘法，甚至除法，无论运算数是以无符号形式还是以补码形式表示的，都有完全一样或者类似的位级行为。
+
 \endinput
