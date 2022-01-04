@@ -865,4 +865,48 @@ This theorem can be seen to follow directly from the definition of the unsigned 
 
 正如我们看到的，计算机执行的“整数”运算实际上是一种模运算形式。表示数字的有限字长限制了可能的值的取值范围，结果运算可能溢出。我们还看到，补码表示提供了一种既能表示负数也能表示正数的灵活方式，同时使用了与执行无符号算术相同的位级实现，这些运算包括像加法、减法、乘法，甚至除法，无论运算数是以无符号形式还是以补码形式表示的，都有完全一样或者类似的位级行为。
 
+\section{浮点数}
+
+\subsection{二进制小数}
+
+考虑一个形如 $b_m b_{m-1} \cdots b_1 b0 \cdot b_{-1} b_{-2} \cdots b_{-n-1} b_{-n}$ 的表示法，这种表示方法表示的数 $b$ 定义如下：
+\begin{equation}
+    b = \sum\limits_{i=-n}^{m} 2^i \times b_i
+\end{equation}
+符号 ‘.’ 现在变为了二进制的点，点左边的位的权是 2 的正幂，点右边的位的权是 2 的负幂。
+
+\subsection{IEEE 浮点表示}
+
+IEEE 浮点标准用 $V = (-1)^s \times M \times 2^E$ 的形式来表示一个数：
+\begin{itemize}
+    \item 符号（sign） $s$ 决定这个数是负数（$s=1$）还是正数（$s=0$），而对于数值 $0$ 的符号位解释作为特殊情况处理。
+    \item 阶码（exponent） $E$ 的作用是对浮点数加权，这个权重是 $2$ 的 $E$ 次幂（可能是负数）。
+    \item 尾数（significand） $M$ 是一个二进制小数，它的范围是 $1 \~{} 2 - \varepsilon$，或者是 $0 \~{} 1 - \varepsilon$。
+\end{itemize}
+
+将浮点数的位表示划分为 3 个字段，分别对这些值进行编码：
+\begin{itemize}
+    \item 一个单独的符号位 $s$ 直接编码符号 $s$。
+    \item $k$ 位的阶码字段 \verb|exp| $= e_{k-1} \cdots e_1 e_0$ 编码阶码 $E$。
+    \item $n$ 位小数字段 \verb|frac| $= f_{n-1} \cdots f_1 f_0$ 编码尾数 $M$，但是编码出来的值也依赖于阶码字段的值是否等于 $0$。
+\end{itemize}
+
+在单精度浮点格式中，\verb|s|、\verb|exp| 和 \verb|frac| 字段分别为 $1$ 位、$k = 8$ 位和 $n = 23$ 位，加起来 $32$ 位；在双精度浮点格式中，\verb|s|、\verb|exp| 和 \verb|frac| 字段分别为 $1$ 位、$k = 11$ 位和 $n = 52$ 位，加起来 $64$ 位。
+
+\begin{tikzfig}
+    \draw[fill=White!60!lightgray] (0, 0) rectangle node{\texttt{s}} ++(0.5, -1.5em);
+    \draw[fill=White!60!ProcessBlue] (0.5, 0) node[above]{31 30} rectangle node{\texttt{exp}} ++(4, -1.5em);
+    \draw[fill=White!60!lightgray] (4.5, 0) node[above]{23 22} rectangle node{\texttt{frac}} ++(11.5, -1.5em);
+    \draw (16, 0) node[above, xshift=-0.7em]{0};
+    \draw (0, 0) node[above, yshift=1.5em, xshift=3.5em]{Single precision};
+
+    \draw[fill=White!60!lightgray] (0, -6em) rectangle node{\texttt{s}} ++(0.5, -1.5em);
+    \draw[fill=White!60!ProcessBlue] (0.5, -6em) node[above]{63 62} rectangle node{\texttt{exp}} ++(5.5, -1.5em);
+    \draw[fill=White!60!lightgray] (6, -6em) node[above]{52 51} rectangle node{\texttt{frac(51:32)}} ++(10, -1.5em);
+    \draw[fill=White!60!lightgray] (0, -10em) node[above, xshift=0.7em]{31}rectangle node{\texttt{frac(31:0)}} ++(16, -1.5em);
+    \draw (16, -6em) node[above, xshift=-0.7em]{32};
+    \draw (16, -10em) node[above, xshift=-0.7em]{0};
+    \draw (0, -6em) node[above, yshift=1.5em, xshift=3.5em]{Double precision};
+\end{tikzfig}
+
 \endinput
