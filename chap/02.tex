@@ -695,4 +695,133 @@ This theorem can be seen to follow directly from the definition of the unsigned 
         \item $2^{w-1} \leq z < 2^w$. We will again have $z' = z$, giving $2^{w−1} \leq z' < 2^w$. But in this range we have $z'' = z' − 2^w$, giving $z'' = x + y − 2^w$. This is the case of positive overflow. We have added two positive numbers $x$ and $y$ (that’s the only way we can have $z \geq 2^{w−1}$) and obtained a negative result $z'' = x + y − 2^w$.
     \end{enumerate}
 \end{proof}
+
+\begin{theorem}[Detecting overflow of two's-complement addition]
+    For $x$ and $y$ in the range $TMin_w \leq x, y \leq TMax_w$, let $s \doteq x +^t_w y$. Then the computation of $s$ has had positive overflow if and only if $x > 0$ and $y > 0$ but $s \leq 0$. The computation has had negative overflow if and only if $x < 0$ and $y < 0$ but $s \geq 0$.
+\end{theorem}
+
+\begin{proof}[Detecting overflow of tow's-compelmet addition]
+    Let us first do the analysis for positive overflow. If both $x > 0$ and $y > 0$ but $s \leq 0$, then clearly positive overflow has occurred. Conversely, positive overflow requires (1) that $x > 0$ and $y > 0$ (otherwise, $x + y < TMax_w$ ) and (2) that $s ≤ 0$ (from Equation \eqref{thm:adds}). A similar set of arguments holds for negative overflow.
+\end{proof}
+
+\subsection{补码的非}
+
+可以看到范围在 $TMin_w \leq x \leq TMax_w$ 中的每个数字 $x$ 都有 $+^t_w$ 下的加法逆元，将 $-^t_w$ 表示如下。
+
+\begin{theorem}[Two's-complement negation]
+    For $x$ in the range $TMin_w \leq x \leq TMax_w$, its two's complement negation $-^t_w x$ is given by the formula
+    \begin{equation}
+        -^t_w x = \left\{
+        \begin{array}{ll}
+            TMin_w, & x = TMin_w \\
+            -x, & x > TMin_w
+        \end{array}
+        \right.
+    \label{thm:negs}
+    \end{equation}
+\end{theorem}
+
+也就是说，对于 $w$ 位的补码加法来说，$TMin_w$ 是自己的加法的逆，而对其他任何数值 $x$ 都有 $-x$ 作为其加法的逆。
+
+\begin{proof}[Two's-complement negation]
+    Observe that $TMin_w + TMin_w = −2^{w−1} + −2^{w−1} = −2^w$. This would cause negative overflow, and hence $TMin_w +^t_w TMin_w = −2^w + 2^w = 0$. For values of $x$ such that $x > TMin_w$, the value $−x$ can also be represented as a $w$-bit two’s-complement number, and their sum will be $−x + x = 0$.
+\end{proof}
+
+\subsection{无符号乘法}
+
+范围在 $0 \leq x, y \leq 2^w - 1$ 内的整数 $x$ 和 $y$ 可以被表示为 $w$ 位的无符号数，但是它们的乘积 $x \cdot y$ 的取值范围为 $0$ 到 $(2^w - 1)^2 = 2^{2w} - 2^{w+1} + 1$ 之间。这可能需要 $2w$ 位来表示。C 语言中的无符号乘法被定义为产生 $w$ 位的值，也就是 $2w$ 位的整数乘积的低 $w$ 位表示的值。我们将这个值表示为 $x *^u_w y$。
+
+\begin{theorem}[Unsigned multiplication]
+    For $x$ and $y$ such that $0 \leq x, y \leq UMax_w$:
+    \begin{equation}
+        x *^u_w y = (x \cdot y) \bmod 2^w
+        \label{thm:mulu}
+    \end{equation}
+\end{theorem}
+
+\subsection{补码乘法}
+
+范围在 $-2^{w-1} \leq x, y \leq 2^{w-1} - 1$ 内的整数 $x$ 和 $y$ 可以被表示为 $w$ 位的补码数字，但是它们的乘积 $x \cdot y$ 的取值范围为 $-2^{w-1} \cdot (2^{w-1} - 1) = -2^{2w-2} + 2^{w-1}$ 到 $-2^{w-1} \cdot -2^{w-1} = -2^{2w-2}$ 之间。要想用补码表示这个乘积，可能需要 $2w$ 位。C 语言中的有符号乘法是通过将 $2w$ 位的乘积截断为 $w$ 位来实现的。我们将这个数值表示为 $*^t_w$。将一个补码数阶截断为 $w$ 位相当于先计算该值模 $2^w$，再把无符号数转换为补码。
+
+\begin{theorem}[Two's-compelment multiplication]
+    For $x$ and $y$ such that $TMin_w \leq x, y \leq TMax_w$:
+    \begin{equation}
+        x *^t_w y = U2T_w((x \cdot y) \bmod 2^w)
+        \label{thm:muls}
+    \end{equation}
+\end{theorem}
+
+我们认为对于无符号和补码乘法来说，乘法运算的二进制表示是一样的。
+
+\begin{theorem}[Bit-level equivalence of unsigned and two's-complement multiplication]
+    Let $\vec{x}$ and $\vec{y}$ be bit vectors of length $w$. Define integers $x$ and $y$ as the values represented by these bits in two's-complement form: $x = B2T_w(\vec{x})$ and $y = B2T_w(\vec{y})$. Define nonnegative integers $x'$ and $y'$ as the values represented by these bits in unsigned form: $x' = B2U_w(\vec{x})$ and $y' = B2U_w(\vec{y})$. Then
+    \[
+        T2B_w(x *^t_w y) = U2B_w(x' *^u_w y')
+    \]
+\end{theorem}
+
+\begin{proof}[Bit-level equivalence of unsigned and two's-complement multiplication]
+    From Equation \eqref{proof:t2u}, we have $x' = x + x_{w-1}2^w$ and $y' = y + y_{w-1}2^w$. Computing the product of these values modulo $2_w$ gives the following:
+    \begin{equation}
+        \begin{aligned}
+            (x' \cdot y') \bmod 2_w & = [(x + x_{w-1}2^w) \cdot (y + y_{w-1}2^w)] \bmod 2^w \\
+            & = [x \cdot y + (x_{w-1}y + y_{w-1}x)2^w + x_{w-1}y_{w-1}2^{2w}] \bmod 2_w \\
+            &= (x \cdot y) \bmod 2^w
+        \end{aligned}
+        \label{eq:x'y'mod}
+    \end{equation}
+    The terms with weight $2^w$ and $2^{2w}$ drop out due to the modulus operator. By Equation \eqref{thm:muls}, we have $x *^t_w y = U2T_w((x \cdot y) \bmod 2^w)$. We can apply the operation $T2U_w$ to both sides to get
+    \[
+        T2U_w(x *^t_w y) = T2U_w(U2T_w((x \cdot y) \bmod 2^w)) = (x \cdot y) \bmod 2^w
+    \]
+    Combining this result with Equations \eqref{thm:mulu} and \eqref{eq:x'y'mod} shows that $T2U_w(x *^t_w y) = (x' \cdot y') \bmod 2^w = x' *^t_w y'$. We can then apply $U2B_w$ to both sides to get
+    \[
+        U2B_w(T2U_w(x *^t_w y)) = T2B(x *^t_w y) = U2B(x' *^u_w y')
+    \]
+\end{proof}
+
+\subsection{乘以常数}
+
+在大多数机器上，乘法运算指令比其他整数运算指令要慢。因此，编译期使用了一项重要的优化，用移位和加法运算的组合来代替乘以常数的乘法。首先，考虑乘以 $2$ 的幂的情况。
+
+\begin{theorem}[Multiplication by a power of 2]
+    Let $x$ be the unsigned integer represented by bit pattern $[x_{w-1}, x_{w-2}, \dots, x_0]$. Then for any $k \geq 0$, the $w + k$-bit unsigned representation of $x2^k$ is given by $[x_{w-1}, x_{w-2}, \dots, x_0, 0, \dots, 0]$, where $k$ zeros have benn added to the right.
+\end{theorem}
+
+\begin{proof}[Multiplication by a power of 2]
+    This property can be derived using Equation \eqref{def:b2u}:
+    \begin{align*}
+        B2U_{w+k}([x_{w-1}, x_{w-2}, \dots, x_0, 0, \dots, 0]) &= \sum\limits_{i=0}^{w-1}x_i2^{i+k} \\
+        & = \Bigl[\sum\limits_{i=0}^{w-1}x_i2^i\Bigr] \cdot 2^k \\
+        &= x2^k
+    \end{align*}
+\end{proof}
+
+当对固定字长左移 $k$ 位时，其高 $k$ 位被丢弃，得到 $[x_{w-k-1}, x_{w-k-2}, \dots, x_0, 0, \dots, 0]$，而执行固定字长的乘法也是这种情况。因此，我们可以看出左移一个数值等价于执行一个与 $2$ 的幂相乘的无符号乘法。
+
+\begin{theorem}[Unsigend multiplication by a power of 2]
+    For C variables \verb|x| and \verb|k| with unsigned values $x$ and $k$, such that $0 \leq k < w$, the C expression \verb|x << k| yields the value $x *^u_w 2^k$.
+\end{theorem}
+
+由于固定大小的补码算数运算的位级操作与其无符号运算等价，因此有类似表述。
+
+\begin{theorem}[Two's-complement multiplication by a power of 2]
+    For C variables \verb|x| and \verb|k| with two's-complement value $x$ and unsigend value $k$, such that $0 \leq k < w$, the C expression \verb|x << k| yields the value $x *^t_w 2^k$.
+\end{theorem}
+
+由于整数乘法比移位和加法的代价要大得多，许多 C 语言编译器试图以移位、加法和减法的组合来消除很多整数乘以常数的情况。例如，假设一个程序包含表达式 \verb|x * 14|。利用 $14 = 2^3 + 2^2 + 2^1$，编译器会将乘法重写为 \verb|(x << 3) + (x << 2) + (x << 1)|，将一个乘法替换为三个移位和两个加法。编译器还可以利用 $14 = 2^4 - 2^1$，将乘法重写为 \verb|(x << 4) - (x << 1)|，这时只需要两个移位和一个减法。
+
+\subsection{除以 2 的幂}
+
+在大多数机器上，整数除法要比整数乘法更慢，除以 2 的幂也可以用移位运算来实现，只不过用的是右移，无符号和补码数分别使用逻辑移位和算数移位。
+
+整数除法总是舍入到 0。为了精确定义，需要引入一些符号。
+
+\begin{definition}[Floor of a number]
+    For any real number $a$, define $\lfloor a \rfloor$ to be the unique integer $a'$ such that $a' \leq a < a' + 1$.
+\end{definition}
+
+\begin{definition}[Ceil of a number]
+    For any real number $a$, define $\lceil a \rceil$ to be the unique integer $a'$ such that $a' - 1 < a \leq a'$.
+\end{definition}
 \endinput
