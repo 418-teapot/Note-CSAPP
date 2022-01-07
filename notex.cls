@@ -48,6 +48,19 @@
     autogobble = true,
     linenos = true
 }
+\newminted{bash}{
+    bgcolor = light-gray,
+    xleftmargin = \parindent,
+    linenos = true,
+    autogobble = true
+}
+\newmintinline{bash}{}
+\newminted{text}{
+    bgcolor = light-gray,
+    xleftmargin = \parindent,
+    linenos = true,
+    autogobble = true
+}
 
 \RequirePackage{enumitem}
 \AddEnumerateCounter{\chinese}{\chinese}{}
