@@ -1,0 +1,118 @@
+\chapter{程序的机器级表示}
+
+计算机执行机器代码，用字节序列编码低级的操作，包括处理数据、管理内存、读写存储设备上的数据，以及利用网络通信。编译器基于编程语言的规则、目标机器的指令集和操作系统遵循的管理，经过一系列的阶段生成机器代码。GCC C 语言编译器以汇编代码的形式产生输出，汇编代码是机器代码的文本表示，给出程序中的每一条指令。然后 GCC 调用汇编器和链接器，根据汇编代码生成可执行的机器代码。
+
+\section{历史观点}
+
+Intel 处理器系列俗称 x86,经历了一个长期的、不断进化的发展过程。
+
+8086 是第一代单芯片、16位微处理器；i386 将体系结构扩展到 32 位，增加了平坦寻址模式（flat addressing model）；Pentium III 引入了 SSE 指令；Pentium 4 扩展到了 SSE2；Pentium 4E 增加了超线程；Core i7 Nehalem 同时支持超线程和多核；Core i7 Sandy Bridge 引入了 AVX；Core i7 Haswell 扩展到了 AVX2。
+
+\section{程序编码}
+
+\subsection{机器级代码}
+
+计算机系统使用了多种不同形式的抽象，利用更简单的抽象模型来隐藏实现的细节。对于机器级编程来说，其中两种抽象尤为重要。第一种是 ISA 来定义机器级程序的格式和行为，它定义了处理器状态、指令的格式，以及每条指令对状态的影响。大多数 ISA，包括 x86，将程序的行为描述成好像每条指令都是按顺序执行的，一条指令结束后，下一条再开始。处理器的硬件远比描述的精细复杂，它们并发地执行许多指令，但是可以采取措施保证整体行为与 ISA 指定的顺序执行的行为完全一致。第二种抽象是，机器级程序使用的内存地址是虚拟地址，提供的内存模型看上去是一个非常大的字节数组。存储器系统的实际实现是将多个硬件存储器和操作系统软件组合起来。
+
+在整个编译过程中，编译器会完成大部分的工作，将把 C 语言提供的相对比较抽象的执行模型表示的程序转化成处理器执行的非常基本的指令。x86-64 的机器代码和原始的 C 代码差别很大。一些通常对 C 语言程序员隐藏的处理器状态都是可见的：
+
+\begin{itemize}
+    \item 程序计数器（PC，在 x86-64 中用 \verb|%rip| 来表示）给出要执行的下一条指令在内存中的地址。
+    \item 整数寄存器堆（共 16 个寄存器），分别存储 64 位的值。这些寄存器可以存储地址或整数数据。有的寄存器被用来记录某些重要的程序状态，而其他的寄存器用来保存临时数据，例如过程的参数和局部变量，以及函数的返回值。
+    \item 条件码寄存器保存着最近执行的算术或逻辑指令的状态信息，通常用于控制流或者条件传送。
+    \item 一组向量寄存器可以存放一个或多个整数或浮点数值。
+\end{itemize}
+
+\subsection{代码示例}
+
+假设 C 语言代码文件 \verb|mstore.c|：
+
+\begin{cppcode}
+long mult2(long, long);
+
+void multstore(long x, long y, long *dest) {
+    long t = mult2(x, y);
+    *dest = t;
+}
+\end{cppcode}
+
+在命令行上使用 \verb|-S| 选项，就能看到产生的汇编代码：\verb|gcc -Og -S mstore.c| 或者 \verb|clang -Og -S mstore.c|。
+
+汇编代码文件包含各种声明，包含下面几行：
+
+\begin{gascode}
+multstore:
+    pushq   %rbx
+    movq    %rdx, %rbx
+    callq   mult2
+    movq    %rax, (%rbx)
+    popq    %rbx
+    retq
+\end{gascode}
+
+如果使用 \verb|-c| 选项，会编译并汇编该代码：\verb|gcc -Og -c mstore.c| 或者 \verb|clang -Og -c mstore.c|。
+
+这就会产生目标代码文件 \verb|mstore.o|，它是二进制格式的，所以无法直接查看。
+
+\marginpar{\footnotesize 要展示程序（比如 mstore）的二进制目标代码，可以用反汇编器确定该过程的代码长度是 14 字节。然后，在文件 mstore.o 上运行调试工具 GDB，输入命令：x/14xb multstore。这条命令会让调试器显示从函数 multstore 所处地址开始的 14 个十六进制格式表示的字节。}
+
+要查看机器代码文件的内容，有一类称为反汇编器（disassembler）的程序非常有用。这些程序根据机器代码产生一种类似于汇编代码的格式。\verb|objdump -d mstore.o| 或者\\ \verb|llvm-objdump -d mstore.o|。
+
+结果如下：
+
+\begin{textcode}
+0000000000000000 multstore:
+    0: 53                               pushq   %rbx
+    1: 48 89 d3                         movq    %rdx, %rbx
+    4: e8 00 00 00 00                   callq   0 <multstore+0x9>
+    9: 48 89 03                         movq    %rax, (%rbx)
+    c: 5b                               popq    %rbx
+    d: c3                               retq
+\end{textcode}
+
+其中一些关于机器代码和它的反汇编表示的特性值得主义：
+
+\begin{itemize}
+    \item x86-64 的指令长度从 1 到 15 个字节不等。常用的指令以及操作数较少额度指令所需的字节数少，而哪些不太常用或操作数较多的指令所需字节数较多。
+    \item 设计指令格式的方式是，从某个给定位置开始，可以将字节唯一地解码成机器指令。
+    \item 反汇编器只是基于机器代码文件中的字节序列来确定汇编代码，它不需要访问该程序的源代码或者汇编代码。
+    \item 反汇编器使用的指令命名规则可能与生成的汇编代码有一些细微的区别（常见于 objdump 和 GCC）。
+\end{itemize}
+
+生成实际可执行的代码需要对一组目标代码文件运行链接器，而这一组目标代码文件中必须包含有一个 \verb|main| 函数。假设有文件 \verb|main.c|：
+
+\begin{cppcode}
+#include <stdio.h>
+
+void multstore(long, long, long *);
+
+int main() {
+    long d;
+    multstore(2, 3, &d);
+    printf("2 * 3 --> %ld\n", d);
+    return 0;
+}
+long mult2(long a, long b) {
+    long s = a * b;
+    return s;
+}
+\end{cppcode}
+
+然后，生成可执行文件 \verb|prog|：\verb|clang -Og -o prog main.c mstore.c|。文件 \verb|prog| 的体积变得很大，因为它不仅包含了两个函数的代码，还包含了用来启动和终止程序的代码，以及用来与操作系统交互的代码。反汇编 \verb|prog| 文件：\verb|llvm-objdump -d prog|。
+
+反汇编器会抽取出各种代码序列，包括下面这段：
+
+\begin{textcode}
+0000000000401170 multstore:
+  401170: 53                            pushq   %rbx
+  401171: 48 89 d3                      movq    %rdx, %rbx
+  401174: e8 e7 ff ff ff                callq   -25 <mult2>
+  401179: 48 89 03                      movq    %rax, (%rbx)
+  40117c: 5b                            popq    %rbx
+  40117d: c3                            retq
+  40117e: 66 90                         nop
+\end{textcode}
+
+这段代码与 \verb|mstore.c| 反汇编产生的代码几乎完全一样。其中一个主要的区别是左边列出的地址不同（链接器将这段代码的地址移到了一段不同的地址范围中）。第二个不同之处在于链接器填上了 \verb|callq| 指令调用函数 \verb|mult2| 需要使用的地址。链接器的任务之一就是为函数调用找到匹配的函数的可执行代码的位置。最后一个区别是多了一条 \verb|nop| 指令，插入 \verb|nop| 的作用是为了使函数代码变为 16 字节，使得就存储器系统性能而言，能够更好地放置下一个代码块。
+
+\endinput
