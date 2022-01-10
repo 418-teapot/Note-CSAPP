@@ -378,4 +378,45 @@ scale:
     retq
 \end{gascode}
 
+\subsection{一元和二元操作}
+
+一元操作只有一个操作数，既是源又是目的。这个操作数可以是一个寄存器，也可以是一个内存位置。二元操作有两个操作数，其中第二个操作数既是源又是目的。第一个操作数可以是立即数、寄存器或者内存位置，第二个操作数可以是寄存器或者内存位置。
+
+\subsection{移位操作}
+
+移位操作的第一个操作数是移位量，第二个操作数是要移位的数。移位量可以是一个立即数，或者放在单字节寄存器 \verb|%cl| 中。
+
+\subsection{讨论}
+
+大多数指令，既可以用于无符号运算，又可以用于补码运算。只有右移操作要求区分有符号和无符号数。这个特性使得补码运算可以实现有符号整数运算。
+
+\subsection{特殊的算术运算}
+
+2 个 64 位有符号或者无符号整数相乘得到的乘积需要 128 位来表示，x86-64 指令集对 128 位（16 字节）数的操作提供有限的支持。Intel 把 16 字节的数称为 oct word。下表展示了产生 128 位数的指令：
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        \multicolumn{2}{l}{Instruction} & Effect & Description \\
+        \midrule
+        \texttt{imulq} & $S$ & $R[\texttt{\%rdx}]:R[\texttt{\%rax}] \leftarrow S \times R[\texttt{\%rax}]$ & Signed full multiply \\
+        \texttt{mulq} & $S$ & $R[\texttt{\%rdx}]:R[\texttt{\%rax}] \leftarrow S \times R[\texttt{\%rax}]$ & Unsigned full multiply \\
+        \\
+        \texttt{cqto} & & $R[\texttt{\%rdx}]:R[\texttt{\%rax}] \leftarrow SignExtend(R[\texttt{\%rax}])$ & Convert to oct word \\
+        \\
+        \texttt{idivq} & $S$ & $R[\texttt{\%rdx}] \leftarrow R[\texttt{\%rdx}]:R[\texttt{\%rax}] \bmod S$; & Signed divide \\
+        & & $R[\texttt{\%rax}] \leftarrow R[\texttt{\%rdx}]:R[\texttt{\%rax}] \div S$ & \\
+        \texttt{divq} & $S$ & $R[\texttt{\%rdx}] \leftarrow R[\texttt{\%rdx}]:R[\texttt{\%rax}] \bmod S$; & Unsigned divide \\
+        & & $R[\texttt{\%rax}] \leftarrow R[\texttt{\%rdx}]:R[\texttt{\%rax}] \div S$ & \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\verb|imulq| 指令有两种不同的形式。其中一种，是 IMUL 指令类中的一种。这种形式的 \verb|imulq| 指令是一个双操作数乘法指令，它从两个 64 位操作数产生一个 64 位乘积。
+
+此外，x86-64 还提供了两条单操作数乘法指令，以计算两个 64 位数的全 128 位乘积，都要求一个参数必须在寄存器 \verb|%rax| 中，而另一个作为指令的源操作数给出。然后乘积存放在寄存器 \verb|%rdx|（高 64 位）和 \verb|%rax|（低 64 位）中。
+
+前面的算术运算表没有列出除法或取模操作。这些操作是由单操作数除法指令来提供的，类似于单操作数乘法指令。
+
 \endinput
