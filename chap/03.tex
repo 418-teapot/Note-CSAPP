@@ -247,7 +247,7 @@ MOV 类指令将数据从原位置复制到目的位置，不做任何变化。
     \centering
     \begin{tabular}{llll}
         \toprule
-        Instruction & & Effect & Description \\
+        \multicolumn{2}{l}{Instruction} & Effect & Description \\
         \midrule
         MOV                & $S, D$ & $D \leftarrow S$  & Move \\
         \quad\texttt{movb} &        &                   & Move byte \\
@@ -309,14 +309,14 @@ MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为
 
 \begin{table}[!ht]
     \centering
-    \begin{tabular}{lll}
+    \begin{tabular}{llll}
         \toprule
-        Instruction & Effect & Description \\
+        \multicolumn{2}{l}{Instruction} & Effect & Description \\
         \midrule
-        \texttt{pushq} \quad $S$ & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] - 8$; & Push quad word \\
-        & $M[R[\texttt{\%rsp}]] \leftarrow S$ & \\
-        \texttt{popq} \quad $D$ & $D \leftarrow M[R[\texttt{\%rsp}]]$; & Pop quad word \\
-        & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] + 8$ & \\
+        \texttt{pushq} & $S$ & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] - 8$; & Push quad word \\
+        & & $M[R[\texttt{\%rsp}]] \leftarrow S$ & \\
+        \texttt{popq} & $D$ & $D \leftarrow M[R[\texttt{\%rsp}]]$; & Pop quad word \\
+        & & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] + 8$ & \\
         \bottomrule
     \end{tabular}
 \end{table}
