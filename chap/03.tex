@@ -169,4 +169,160 @@ multstore:
 
 一个 x86-64 的 CPU 包含一组 16 个 64 位值的通用寄存器，用来存储整数数据和指针，它们的名字都以 \verb|%r| 开头，最初的 8086 有 8 个 16 位的寄存器，即图中的 \verb|%ax| 到 \verb|%bp|。每个寄存器都有特殊的用途，它们的名字就反映了它们的用途。扩展到 IA32 架构时，这些寄存器也扩展成 32 位寄存器，标号从 \verb|%eax| 到 \verb|%ebp|。扩展到 x86-64 后，同样扩展成 64 位寄存器，标号从 \verb|%rax| 到 \verb|%rbp|。除此之外，还增加了 8 个新的寄存器，它们的标号时按照新的命名规则指定的，从 \verb|%r8| 到 \verb|%r15|。
 
+\begin{figure}[!p]
+    \centering
+    \begin{tikzpicture}
+        \foreach \r/\e/\w/\b/\t [count=\x] in {
+            rax/eax/ax/al/Return value,
+            rbx/ebx/bx/bl/Callee saved,
+            rcx/ecx/cx/cl/4th argument,
+            rdx/edx/dx/dl/3rd argument,
+            rsi/esi/si/sil/2nd argumrnt,
+            rdi/edi/di/dil/1st argument,
+            rbp/ebp/bp/bpl/Callee saved,
+            rsp/esp/sp/spl/Stack pointer,
+            r8/r8d/r8w/r8b/5th argument,
+            r9/r9d/r9w/r9b/6th argument,
+            r10/r10d/r10w/r10b/Caller saved,
+            r11/r11d/r11w/r11b/Caller saved,
+            r12/r12d/r12w/r12b/Callee saved,
+            r13/r13d/r13w/r13b/Callee saved,
+            r14/r14d/r14w/r14b/Callee saved,
+            r15/r15d/r15w/r15b/Callee saved
+        } {
+            \draw[fill=White!60!ProcessBlue] (0, -1.4 * \x + 0.5) rectangle (16, -1.4 * \x - 0.5);
+            \draw[fill=White!90!ProcessBlue] ($(8, -1.4 * \x + 0.5) + (0, -2pt)$) rectangle ($(16, -1.4 * \x - 0.5) + (-2pt, 2pt)$);
+            \draw[fill=White] ($(12, -1.4 * \x + 0.5) + (0, -4pt)$) rectangle ($(16, -1.4 * \x - 0.5) + (-4pt, 4pt)$);
+            \draw[fill=White, thick] ($(14, -1.4 * \x + 0.5) + (0, -6pt)$) rectangle ($(16, -1.4 * \x - 0.5) + (-6pt, 6pt)$);
+            \node[right] at (0, -1.4 * \x) {\texttt{\%\r}};
+            \node[right] at (8, -1.4 * \x) {\texttt{\%\e}};
+            \node[right] at (12, -1.4 * \x) {\texttt{\%\w}};
+            \node[right] at (14, -1.4 * \x) {\texttt{\%\b}};
+            \node[right] at (16, -1.4 * \x) {\t};
+        }
+        \node[above] at (0, -0.5) {63};
+        \node[above] at (8, -0.5) {31};
+        \node[above] at (12, -0.5) {15};
+        \node[above] at (14, -0.5) {7};
+        \node[above] at (16, -0.5) {0};
+    \end{tikzpicture}
+\end{figure}
+
+\subsection{操作数指示符}
+
+大多数指令有一个或多个操作数，指示出执行一个操作中要使用的源数据值，以及放置结果的目的位置。x86-64 支持多种操作格式。第一种类型是立即数（immediate），用来表示常数值。在 AT\&T 格式的汇编代码中，立即数的书写方式是 \$ 后面跟一个用标准 C 表示法表示的整数。第二种类型是寄存器（register），表示某个寄存器的内容。我们用符号 $r_a$ 来表示任意寄存器 $a$，用引用 $R[r_a]$ 来表示它的值。第三种操作数是内存引用，它会根据计算出来的地址（通常称为有效地址）访问某个内存位置。我们用符号 $M_b[Addr]$ 表示对存储在内存中从地址 $Addr$ 开始的 $b$ 个字节值的引用。为了简便，通常省去下标 $b$。
+
+如下表所示，x86-64 还支持多种寻址模式。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        Type & Form & Operand value & Name \\
+        \midrule
+        Immediate & \$$Imm$ & $Imm$ & Immediate \\
+        \\
+        Register & $r_a$ & $R[r_a]$ & Register \\
+        \\
+        Memory & $Imm$              & $M[Imm]$                              & Absolute \\
+        Memory & $(r_a)$            & $M[R[r_a]]$                           & Indirect \\
+        Memory & $Imm(r_b)$         & $M[Imm + R[r_b]]$                     & Base + displacement \\
+        Memory & $(r_b, r_i)$       & $M[R[r_b] + R[r_i]]$                  & Indexed \\
+        Memory & $Imm(r_b, r_i)$    & $M[Imm + R[r_b] + R[r_i]]$            & Indexed \\
+        Memory & $(, r_i, s)$       & $M[R[r_i] \cdot s]$                   & Scaled indexed \\
+        Memory & $Imm(, r_i, s)$    & $M[Imm + R[r_i] \cdot s]$             & Scaled indexed \\
+        Memory & $(r_b, r_i, s)$    & $M[R[r_b] + R[r_i] \cdot s]$          & Scaled indexed \\
+        Memory & $Imm(r_b, r_i, s)$ & $M[Imm + R[r_b] + R[r_i] \cdot s]$    & Scaled indexed \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{数据传送指令}
+
+最频繁使用的指令是将数据从一个位置复制到另一个位置的指令。
+
+MOV 类指令将数据从原位置复制到目的位置，不做任何变化。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        Instruction & & Effect & Description \\
+        \midrule
+        MOV                 & S, D  & $D \leftarrow S$  & Move \\
+        \quad\texttt{movb}  &       &                   & Move byte \\
+        \quad\texttt{movw}  &       &                   & Move word \\
+        \quad\texttt{movl}  &       &                   & Move double word \\
+        \quad\texttt{movq}  &       &                   & Move quad word \\
+        \texttt{movabsq}    & I, R  & $R \leftarrow I$  & Move absolute word \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\marginpar{\footnotesize 造成这个例外的原因是 x86-64 采用的惯例，即任何为寄存器生成 32 位值的指令都会把该寄存器的高位部分设置为 0。}
+
+源操作数可以是立即数、寄存器或者内存中的值，目的操作数可以是寄存器或者是内存地址。x86-64 限制 传送指令的两个操作数不能同时指向内存。大多数情况下，MOV 指令只会更新目的操作数指定的寄存器字节或者内存位置。唯一的例外是 \verb|movl| 指令以寄存器作为目的时。它会把该寄存器的高 4 字节设置为 0。
+
+MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为符号位。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        Instruction & Effect & Description \\
+        \midrule
+        MOVZ \quad S, R & $R \leftarrow ZeroExtend(S)$ & Move with zero extension \\
+        \quad\texttt{movzbw} & & Move zero-extended byte to word \\
+        \quad\texttt{movzbl} & & Move zero-extended byte to double word \\
+        \quad\texttt{movzwl} & & Move zero-extended word to doubel word \\
+        \quad\texttt{movzbq} & & Move zero-extended byte to quad word \\
+        \quad\texttt{movzwq} & & Move zero-extended word to quad word \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        Instruction & Effect & Description \\
+        \midrule
+        MOVS \quad S, R & $R \leftarrow SignExtend(S)$ & Move with sign extension \\
+        \quad\texttt{movsbw} & & Move sign-extended byte to word \\
+        \quad\texttt{movsbl} & & Move sign-extended byte to double word \\
+        \quad\texttt{movswl} & & Move sign-extended word to double word \\
+        \quad\texttt{movsbq} & & Move sign-extended byte to quad word \\
+        \quad\texttt{movswq} & & Move sign-extended word to quad word \\
+        \quad\texttt{movslq} & & Move sign-extended double to quad word \\
+        \texttt{cltq} & $\texttt{\%rax} \leftarrow SignExtend(\texttt{\%eax})$ & Sign-extend \texttt{\%eax} to \texttt{\%rax} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{数据传送示例}
+
+略。
+
+\subsection{压入和弹出栈数据}
+
+栈是一种数据结构，可以添加或者删除值，遵循后进先出的原则。通过 push 操作把数据压入栈中，通过 pop 操作删除数据；它具有一个属性：弹出的值永远是最近被压入而且仍然在栈中的值。栈可以实现为一个数组，总是从数组的一段插入和删除元素。这一端被称为栈顶。x86-64 中，程序栈存放在内存中某个区域。栈向下增长，这样一来，栈顶元素的地址是所有栈中元素地址最低的。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        Instruction & Effect & Description \\
+        \midrule
+        \texttt{pushq} \quad S & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] - 8$; & Push quad word \\
+        & $M[R[\texttt{\%rsp}]] \leftarrow S$ & \\
+        \texttt{popq} \quad D & $D \leftarrow M[R[\texttt{\%rsp}]]$; & Pop quad word \\
+        & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] + 8$ & \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\verb|pushq| 指令的功能是把数据压入到栈上，而 \verb|popq| 指令是弹出数据，这两条指令都只有一个操作数。
+
+\section{算术和逻辑操作}
+
 \endinput
