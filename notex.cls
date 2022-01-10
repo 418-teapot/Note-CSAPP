@@ -48,6 +48,12 @@
     autogobble = true,
     linenos = true
 }
+\newminted{nasm}{
+    bgcolor = light-gray,
+    xleftmargin = \parindent,
+    autogobble = true,
+    linenos = true
+}
 \newminted{bash}{
     bgcolor = light-gray,
     xleftmargin = \parindent,
