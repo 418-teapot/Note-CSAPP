@@ -338,14 +338,14 @@ MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为
         INC  & $D$    & $D \leftarrow D + 1$    & Increment \\
         DEC  & $D$    & $D \leftarrow D - 1$    & Decrement \\
         NEG  & $D$    & $D \leftarrow -D$       & Negate \\
-        NOT  & $D$    & $D \leftarrow ~D$       & Complement \\
+        NOT  & $D$    & $D \leftarrow \~{}D$    & Complement \\
         \\
-        ADD  & $S, D$ & $D \leftarrow D + S$  & Add \\
-        SUB  & $S, D$ & $D \leftarrow D - S$  & Subtract \\
-        IMUL & $S, D$ & $D \leftarrow D * S$  & Multiply \\
-        XOR  & $S, D$ & $D \leftarrow D ^ S$  & Exclusive-or \\
-        OR   & $S, D$ & $D \leftarrow D | S$  & Or \\
-        AND  & $S, D$ & $D \leftarrow D \& S$ & And \\
+        ADD  & $S, D$ & $D \leftarrow D + S$    & Add \\
+        SUB  & $S, D$ & $D \leftarrow D - S$    & Subtract \\
+        IMUL & $S, D$ & $D \leftarrow D * S$    & Multiply \\
+        XOR  & $S, D$ & $D \leftarrow D \^{} S$ & Exclusive-or \\
+        OR   & $S, D$ & $D \leftarrow D | S$    & Or \\
+        AND  & $S, D$ & $D \leftarrow D \& S$   & And \\
         \\
         SAL  & $k, D$ & $D \leftarrow D << k$ & Left shift \\
         SHL  & $k, D$ & $D \leftarrow D << k$ & Left shift(same as SAL) \\
@@ -418,5 +418,98 @@ scale:
 此外，x86-64 还提供了两条单操作数乘法指令，以计算两个 64 位数的全 128 位乘积，都要求一个参数必须在寄存器 \verb|%rax| 中，而另一个作为指令的源操作数给出。然后乘积存放在寄存器 \verb|%rdx|（高 64 位）和 \verb|%rax|（低 64 位）中。
 
 前面的算术运算表没有列出除法或取模操作。这些操作是由单操作数除法指令来提供的，类似于单操作数乘法指令。
+
+\section{控制}
+
+\subsection{条件码}
+
+除了整数寄存器，x86-64 CPU 还维护着一组单个位的条件码（condition code）寄存器，它们描述了最近的算术或逻辑操作的属性。可以检测这些寄存器来执行条件分支指令。最常用的条件码有：
+\begin{itemize}
+    \item \verb|CF|: Carry flag 最近的操作使最高位产生了进位。
+    \item \verb|ZF|: Zero flag 最近的操作得出的结果为 0。
+    \item \verb|SF|: Sign flag 最近的操作得出的结果为负数。
+    \item \verb|OF|: Overflow flag 最近的操作导致一个补码溢出。
+\end{itemize}
+
+\verb|leaq| 指令不会改变任何条件码，除此之外，所有运算指令都会设置条件码。还有两类指令只设置条件码而不改变任何其他寄存器：CMP 指令根据两个操作数之差设置条件码，TEST 指令根据两个操作数的与设置条件码。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        \multicolumn{2}{l}{Instruction} & Based on & Description \\
+        \midrule
+        CMP & $S1, S2$ & $S2 - S1$ & Compare \\
+        \quad\texttt{cmpb} & & & Compare byte \\
+        \quad\texttt{cmpw} & & & Compare word \\
+        \quad\texttt{cmpl} & & & Compare double word \\
+        \quad\texttt{cmpq} & & & Compare quad word \\
+        TEST & $S1, S2$ & $S1 \& S2$ & Test \\
+        \quad\texttt{testb} & & & Test byte \\
+        \quad\texttt{testw} & & & Test word \\
+        \quad\texttt{testl} & & & Test double word \\
+        \quad\texttt{testq} & & & Test quad word \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{访问条件码}
+
+条件码通常不会直接读取，常用的使用方法有三种：1）根据条件码的某种组合，将一个字节设置为 0 或者 1；2）条件跳转到程序的其他位置；3）条件传送数据。
+
+对于第一种情况，该类指令称为 SET 指令，一条 SET 指令的目的操作数是低位单字节寄存器或者单字节的内存位置。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{lllll}
+        \toprule
+        \multicolumn{2}{l}{Instruction} & Synonym & Effect & Set Condition \\
+        \midrule
+        \texttt{sete}  & $D$ & \texttt{setz}  & $D \leftarrow ZF$     & Equal / zero \\
+        \texttt{setne} & $D$ & \texttt{setnz} & $D \leftarrow \~{}ZF$ & Not equal / not zero \\
+        \\
+        \texttt{sets}  & $D$ & & $D \leftarrow SF$     & Negative \\
+        \texttt{setns} & $D$ & & $D \leftarrow \~{}SF$ & Nonnegative \\
+        \\
+        \texttt{setg}  & $D$ & \texttt{setnle} & $D \leftarrow \~{}(SF\^{}OF)\&\~{}ZF$ & Greater (signed >) \\
+        \texttt{setge} & $D$ & \texttt{setnl}  & $D \leftarrow \~{}(SF\^{}OF)$         & Greater or equal(signed >=) \\
+        \texttt{setl}  & $D$ & \texttt{setnge} & $D \leftarrow SF\^{}OF$               & Less (signed <) \\
+        \texttt{setle} & $D$ & \texttt{setng}  & $D \leftarrow (SF\^{}OF)|ZF$          & Less or equal (signed <=) \\
+        \\
+        \texttt{seta}  & $D$ & \texttt{setnbe} & $D \leftarrow \~{}CF\&\~{}ZF$ & Above (unsigned >) \\
+        \texttt{setae} & $D$ & \texttt{setnb}  & $D \leftarrow \~{}CF$         & Above or equal (unsigned >=) \\
+        \texttt{setb}  & $D$ & \texttt{setnae} & $D \leftarrow CF$             & Below (unsigned <) \\
+        \texttt{setbe} & $D$ & \texttt{setna}  & $D \leftarrow CF|ZF$          & Below or equal (unsigned <=) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{跳转指令}
+
+jump 指令会让程序在执行时切换到一个全新的位置，在汇编代码中，这些跳转的目的地通常用一个 label 指明。下表列出了不同的跳转指令。\verb|jmp| 指令是无条件跳转，可以是直接跳转，也可以是间接跳转。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{lllll}
+        \toprule
+        \multicolumn{2}{l}{Instruction} & Synonym & Jump condition & Description \\
+        \midrule
+        \texttt{jmp} & $Label$ & & 1 & Direct jump \\
+        \texttt{jmp} & $*Operand$ & & 1 & Indirect jump \\
+        \texttt{je}  & $Label$ & \texttt{jz}  & $ZF$ & Equal / zero \\
+        \texttt{jne} & $Label$ & \texttt{jnz} & $\~{}ZF$ & Not equal / not zero \\
+        \texttt{js}  & $Label$ &              & $SF$ & Negative \\
+        \texttt{jns} & $Label$ &              & $\~{}SF$ & Nonnegative \\
+        \texttt{jg}  & $Label$ & \texttt{jnle} & $\~{}(SF\^{}OF)\&\~{}ZF$ & Greater (signed >) \\
+        \texttt{jge} & $Label$ & \texttt{jnl}  & $\~{}(SF\^{}OF)$         & Greater or equal (signed >=) \\
+        \texttt{jl}  & $Label$ & \texttt{jnge} & $SF\^{}OF$               & Less (signed <) \\
+        \texttt{jle} & $Label$ & \texttt{jng}  & $(SF\^{}OF)|ZF$          & Less or equal (signed <=) \\
+        \texttt{ja}  & $Label$ & \texttt{jnbe} & $\~{}CF\&\~{}ZF$         & Above (unsigned >) \\
+        \texttt{jae} & $Label$ & \texttt{jnb}  & $\~{}CF$                 & Above or equal (unsigned >=) \\
+        \texttt{jb}  & $Label$ & \texttt{jnae} & $CF$                     & Below (unsigned <) \\
+        \texttt{jbe} & $Label$ & \texttt{jna}  & $CF|ZF$                  & Below or equal (unsigned <=) \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \endinput
