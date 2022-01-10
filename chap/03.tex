@@ -115,4 +115,58 @@ long mult2(long a, long b) {
 
 这段代码与 \verb|mstore.c| 反汇编产生的代码几乎完全一样。其中一个主要的区别是左边列出的地址不同（链接器将这段代码的地址移到了一段不同的地址范围中）。第二个不同之处在于链接器填上了 \verb|callq| 指令调用函数 \verb|mult2| 需要使用的地址。链接器的任务之一就是为函数调用找到匹配的函数的可执行代码的位置。最后一个区别是多了一条 \verb|nop| 指令，插入 \verb|nop| 的作用是为了使函数代码变为 16 字节，使得就存储器系统性能而言，能够更好地放置下一个代码块。
 
+\subsection{关于格式的注解}
+
+所有以 \verb|.| 开头的都是指导汇编器和链接器工作的伪指令。通常可以忽略。
+
+\subsubsection{AT\&T 与 Intel 汇编代码格式}
+
+我们的表述是 AT\&T 格式的汇编代码，这是 GCC、OBJDUMP 等工具的默认格式。微软的工具和 Intel 的文档，其汇编代码是 Intel 格式的。可以使用 \verb|clang -Og -S -masm=intel mstore.c| 产生 \verb|multstore| 函数的 Intel 格式的代码：
+
+\begin{nasmcode}
+multstore:
+    push    rbx
+    mov     rbx, rdx
+    call    mult2@PLT
+    mov     qword ptr [rbx], rax
+    pop     rbx
+    ret
+\end{nasmcode}
+
+可以看到 Intel 和 AT\&T 格式再如下方面有所不同：
+
+\begin{itemize}
+    \item Intel 格式省略了指示大小的后缀（push 而非 pushq）。
+    \item Intel 格式省略了寄存器名字前面的 \verb|%| 号。
+    \item Intel 格式用不同大方式来描述内存中的位置（\verb|qword ptr [rbx]| 而非 \verb|(%rbx)|）。
+    \item 在带有多个操作数的指令情况下，列出操作数的顺序相反。
+\end{itemize}
+
+\section{数据格式}
+
+由于 x86 是从 16 位体系结构扩展而来的，Intel 用术语字（word）表示 16 位数据类型，因此，称 32 位数为 double words 或 long word，称 64 位数为 quad words。AT\&T 格式的汇编代码指令大部分都有一个字符的后缀，表明操作数的大小，如下表所示。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llcc}
+        \toprule
+        C declaration & Intel data type & Assembly-code suffix & Size(bytes) \\
+        \midrule
+        char    & Byte              & \verb|b|  & 1 \\
+        short   & Word              & \verb|w|  & 2 \\
+        int     & Double word       & \verb|l|  & 4 \\
+        long    & Quad word         & \verb|q|  & 8 \\
+        char *  & Quad word         & \verb|q|  & 8 \\
+        float   & Single precision  & \verb|s|  & 4 \\
+        double  & Double precision  & \verb|l|  & 8 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+注意，Double word 和 Double precision 使用同样的后缀 \verb|l|，这不会产生歧义，因为浮点数使用的是一组完全不同的指令和寄存器。
+
+\section{访问信息}
+
+一个 x86-64 的 CPU 包含一组 16 个 64 位值的通用寄存器，用来存储整数数据和指针，它们的名字都以 \verb|%r| 开头，最初的 8086 有 8 个 16 位的寄存器，即图中的 \verb|%ax| 到 \verb|%bp|。每个寄存器都有特殊的用途，它们的名字就反映了它们的用途。扩展到 IA32 架构时，这些寄存器也扩展成 32 位寄存器，标号从 \verb|%eax| 到 \verb|%ebp|。扩展到 x86-64 后，同样扩展成 64 位寄存器，标号从 \verb|%rax| 到 \verb|%rbp|。除此之外，还增加了 8 个新的寄存器，它们的标号时按照新的命名规则指定的，从 \verb|%r8| 到 \verb|%r15|。
+
 \endinput
