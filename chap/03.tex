@@ -31,8 +31,8 @@ Intel 处理器系列俗称 x86,经历了一个长期的、不断进化的发展
 long mult2(long, long);
 
 void multstore(long x, long y, long *dest) {
-    long t = mult2(x, y);
-    *dest = t;
+  long t = mult2(x, y);
+  *dest = t;
 }
 \end{cppcode}
 
@@ -87,14 +87,14 @@ multstore:
 void multstore(long, long, long *);
 
 int main() {
-    long d;
-    multstore(2, 3, &d);
-    printf("2 * 3 --> %ld\n", d);
-    return 0;
+  long d;
+  multstore(2, 3, &d);
+  printf("2 * 3 --> %ld\n", d);
+  return 0;
 }
 long mult2(long a, long b) {
-    long s = a * b;
-    return s;
+  long s = a * b;
+  return s;
 }
 \end{cppcode}
 
@@ -249,12 +249,12 @@ MOV 类指令将数据从原位置复制到目的位置，不做任何变化。
         \toprule
         Instruction & & Effect & Description \\
         \midrule
-        MOV                 & S, D  & $D \leftarrow S$  & Move \\
-        \quad\texttt{movb}  &       &                   & Move byte \\
-        \quad\texttt{movw}  &       &                   & Move word \\
-        \quad\texttt{movl}  &       &                   & Move double word \\
-        \quad\texttt{movq}  &       &                   & Move quad word \\
-        \texttt{movabsq}    & I, R  & $R \leftarrow I$  & Move absolute word \\
+        MOV                & $S, D$ & $D \leftarrow S$  & Move \\
+        \quad\texttt{movb} &        &                   & Move byte \\
+        \quad\texttt{movw} &        &                   & Move word \\
+        \quad\texttt{movl} &        &                   & Move double word \\
+        \quad\texttt{movq} &        &                   & Move quad word \\
+        \texttt{movabsq}   & $I, R$ & $R \leftarrow I$  & Move absolute word \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -271,7 +271,7 @@ MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为
         \toprule
         Instruction & Effect & Description \\
         \midrule
-        MOVZ \quad S, R & $R \leftarrow ZeroExtend(S)$ & Move with zero extension \\
+        MOVZ \quad $S, R$ & $R \leftarrow ZeroExtend(S)$ & Move with zero extension \\
         \quad\texttt{movzbw} & & Move zero-extended byte to word \\
         \quad\texttt{movzbl} & & Move zero-extended byte to double word \\
         \quad\texttt{movzwl} & & Move zero-extended word to doubel word \\
@@ -287,7 +287,7 @@ MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为
         \toprule
         Instruction & Effect & Description \\
         \midrule
-        MOVS \quad S, R & $R \leftarrow SignExtend(S)$ & Move with sign extension \\
+        MOVS \quad $S, R$ & $R \leftarrow SignExtend(S)$ & Move with sign extension \\
         \quad\texttt{movsbw} & & Move sign-extended byte to word \\
         \quad\texttt{movsbl} & & Move sign-extended byte to double word \\
         \quad\texttt{movswl} & & Move sign-extended word to double word \\
@@ -313,9 +313,9 @@ MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为
         \toprule
         Instruction & Effect & Description \\
         \midrule
-        \texttt{pushq} \quad S & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] - 8$; & Push quad word \\
+        \texttt{pushq} \quad $S$ & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] - 8$; & Push quad word \\
         & $M[R[\texttt{\%rsp}]] \leftarrow S$ & \\
-        \texttt{popq} \quad D & $D \leftarrow M[R[\texttt{\%rsp}]]$; & Pop quad word \\
+        \texttt{popq} \quad $D$ & $D \leftarrow M[R[\texttt{\%rsp}]]$; & Pop quad word \\
         & $R[\texttt{\%rsp}] \leftarrow R[\texttt{\%rsp}] + 8$ & \\
         \bottomrule
     \end{tabular}
@@ -324,5 +324,58 @@ MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为
 \verb|pushq| 指令的功能是把数据压入到栈上，而 \verb|popq| 指令是弹出数据，这两条指令都只有一个操作数。
 
 \section{算术和逻辑操作}
+
+下表列出了 x86-64 的一些整数和逻辑操作。大多数操作都分成了指令类，这些指令类有四种带不同大小操作数的变种。\marginpar{\footnotesize 只有 \texttt{leaq} 没有其他大小的变种。}这些操作被分为四组：加载有效地址、一元操作、二元操作和移位。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        \multicolumn{2}{l}{Instruction} & Effect & Description \\
+        \midrule
+        \texttt{leaq} & $S, D$ & $D \leftarrow \&S$ & Load effective address \\
+        \\
+        INC  & $D$    & $D \leftarrow D + 1$    & Increment \\
+        DEC  & $D$    & $D \leftarrow D - 1$    & Decrement \\
+        NEG  & $D$    & $D \leftarrow -D$       & Negate \\
+        NOT  & $D$    & $D \leftarrow ~D$       & Complement \\
+        \\
+        ADD  & $S, D$ & $D \leftarrow D + S$  & Add \\
+        SUB  & $S, D$ & $D \leftarrow D - S$  & Subtract \\
+        IMUL & $S, D$ & $D \leftarrow D * S$  & Multiply \\
+        XOR  & $S, D$ & $D \leftarrow D ^ S$  & Exclusive-or \\
+        OR   & $S, D$ & $D \leftarrow D | S$  & Or \\
+        AND  & $S, D$ & $D \leftarrow D \& S$ & And \\
+        \\
+        SAL  & $k, D$ & $D \leftarrow D << k$ & Left shift \\
+        SHL  & $k, D$ & $D \leftarrow D << k$ & Left shift(same as SAL) \\
+        SAR  & $k, D$ & $D \leftarrow D >>_A k$ & Arithmetic right shift \\
+        SHR  & $k, D$ & $D \leftarrow D >>_L k$ & Logical right shift \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{加载有效地址}
+
+load effective address 指令 \verb|leaq| 实际上是 \verb|movq| 指令的变形，该指令的第一个操作数看上去是一个内存引用，但该指令并不是从指定的位置读入数据，而是将有效地址写入到目的操作数。另外，它还可以简洁地描述普通的算术操作。编译器经常利用 \verb|leaq| 的一些灵活用法，根本就与有效地址计算无关。例如：
+
+\begin{cppcode}
+long scale(long x, long y, long z) {
+  long t = x + 4 * y + 12 * z;
+  return t;
+}
+\end{cppcode}
+
+编译时，该函数的算术运算以三条 \verb|leaq| 指令实现：
+
+\begin{gascode}
+# long scale(long x, long y, long z)
+# x in %rdi, y in %rsi, z in %rdx
+scale:
+    leaq    (%rdi,%rsi,4), %rax     # x + 4*y
+    leaq    (%rdx,%rdx,2), %rcx     # z + 2*z = 3*z
+    leaq    (%rax,%rcx,4), %rax     # (x+4*y) + 4*(3*z) = x + 4*y + 12*z
+    retq
+\end{gascode}
 
 \endinput
