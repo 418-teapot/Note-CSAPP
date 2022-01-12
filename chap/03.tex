@@ -820,4 +820,65 @@ C 语言过程调用机制的一个关键特性在于使用了栈数据结构提
 
 如前所述，x86-64 的栈向低地址方向增长，而栈指针 \verb|%rsp| 指向栈顶元素。可以用 \verb|pushq| 和 \verb|popq| 指令将数据存入栈中或是从栈中去除。将栈指针减小一个适当的量可以为没有指定初始值的数据在栈上分配空间。类似的，可以通过增加栈指针来释放空间。
 
+当 x86-64 过程需要的存储空间超出寄存器能够存放的大小时，就会在栈上分配空间。这个部分称为过程的栈帧（stack fram）。下图给出了运行时栈的通用结构，包括把它划分为栈帧。当前正在执行的过程的帧总是在栈顶。当过程 P 调用过程 Q 时，会把返回地址压入栈中，指明当 Q 返回时，要从 P 程序的哪个位置继续执行。我们把这个返回地址当作 P 的栈帧的一部分，因为它存放的是与 P 相关的状态。Q 的代码会扩展当前栈的边界，分配它的栈帧所需的空间。在这个空间中，它可以保存寄存器的值，分配局部变量空间，为它调用的过程设置参数。大多数过程的栈帧都是定长的，在过程的开始就分配好了。但是有些过程需要变长的帧。通过寄存器，过程 P 可以传递最多 6 个整数值，但是如果 Q 需要更多的参数，P 可以在调用 Q 之前在自己的栈帧中存储好这些参数。
+
+\begin{tikzfig}
+    \coordinate (A) at (0, 0);
+    \coordinate (B) at (4, 0);
+    \coordinate (C) at (0, -15);
+    \coordinate (D) at (B |- C);
+    \coordinate (bd1) at ($(B)!1/3!(D)$);
+    \coordinate (bd2) at ($(B)!2/3!(D)$);
+    \foreach \i in {0, 1, 2, ..., 7} {
+        \coordinate (e\i) at ($(bd1)!\i/7!(bd2)$);
+    }
+    \coordinate (f1) at ($(bd2)!1/3!(D)$);
+    \coordinate (f2) at ($(bd2)!2/3!(D)$);
+    \fill[fill=White!60!gray] (A) rectangle node[align=center, font=\LARGE\bfseries]{.\\.\\.} (bd1);
+    \fill[fill=White!80!ProcessBlue] (e0 -| A) rectangle node[align=center, font=\bfseries]{.\\[-0.3ex].\\[-0.3ex].} (e2);
+    \path (e2 -| A) rectangle node{Argument $n$} (e3);
+    \fill[fill=White!80!ProcessBlue] (e3 -| A) rectangle node[align=center, font=\bfseries]{.\\[-0.3ex].\\[-0.3ex].} (e5);
+    \path (e5 -| A) rectangle node{Argument $7$} (e6);
+    \path (e6 -| A) rectangle node{Return Address} (e7);
+    \path (bd2 -| A) rectangle node{Saved registers} (f1);
+    \path (f1 -| A) rectangle node{Local variables} (f2);
+    \path (f2 -| A) rectangle node{Argument build area} (D);
+    \draw[thick] (A) -- (B) -- (D) -- (C) -- (A);
+    \draw[thick] (bd1) -- (bd1 -| A);
+    \draw[thick] (bd2) -- (bd2 -| A);
+    \draw (e2) -- (e2 -| A);
+    \draw (e3) -- (e3 -| A);
+    \draw (e5) -- (e5 -| A);
+    \draw (e6) -- (e6 -| A);
+    \draw (f1) -- (f1 -| A);
+    \draw (f2) -- (f2 -| A);
+    \path (A) -- node[above]{Stack ``bottom''} (B);
+    \path (C) -- node[below]{Stack ``top''} (D);
+    \draw[-latex] ($(C) + (-1, 0)$) node[left, align=right]{Stack pointer\\ \texttt{\%rsp}} -- (C);
+    \draw[-latex] ($(bd2-|A) + (-2, 0)$) -- node[align=center, fill=white]{Increasing\\address} ($(bd1-|A) + (-2, 0)$);
+    \draw[decorate, decoration={brace, raise=5pt}] (B) -- node[right, xshift=6pt]{Earlier frames} (bd1);
+    \draw[decorate, decoration={brace, raise=5pt}] (bd1) -- node[right, xshift=6pt, align=left]{Frame for calling\\function P} (bd2);
+    \draw[decorate, decoration={brace, raise=5pt}] (bd2) -- node[right, xshift=6pt, align=left]{Frame for executing\\function Q} (D);
+\end{tikzfig}
+
+为了提高空间和时间效率，x86-64 过程只分配自己需要的栈帧部分。当所有的局部变量都可以保存在寄存器，而且该函数不会调用任何其他函数时，可以不需要栈帧。
+
+\subsection{转移控制}
+
+将控制从函数 P 转移到函数 Q 只需要简单地把程序计数器设置为 Q 的代码的起始位置。当稍后从 Q 返回的时候，处理器必须记录好它需要继续执行 P 时的代码位置。在 x86-64 机器上，这个信息是用指令 \verb|call Q| 调用过程 Q 来记录的。该指令会把地址 A 压入栈中，并将 PC 设置为 Q 的起始地址。压入的地址 A 被称为返回地址，是紧跟在 \verb|call| 指令后面的那条指令的地址。对应的指令 \verb|ret| 会从栈中弹出地址 A，并把 PC 设置为 A。
+
+下表为 \verb|call| 和 \verb|ret| 指令的一般形式：
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        \multicolumn{2}{l}{Instruction} & Description \\
+        \midrule
+        \texttt{call} & $Label$    & Procedure call \\
+        \texttt{call} & $*Operand$ & Procedure call \\
+        \texttt{ret}  &            & Return from call \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
 \endinput
