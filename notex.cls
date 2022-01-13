@@ -86,6 +86,7 @@
     }
 
 \RequirePackage{booktabs}
+\RequirePackage{multirow}
 
 \RequirePackage[ruled, linesnumbered]{algorithm2e}
 
