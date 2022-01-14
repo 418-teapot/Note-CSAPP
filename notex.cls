@@ -17,6 +17,8 @@
     marginparwidth = 1in,
 }
 
+\RequirePackage{multicol}
+
 \renewcommand*\maketitle{
     \thispagestyle{empty}
     \vspace*{\stretch{0.5}}
@@ -34,6 +36,7 @@
 \definecolor{light-gray}{gray}{0.95}
 
 \RequirePackage{minted}
+\usemintedstyle{perldoc}
 \newminted{cpp}{
     bgcolor = light-gray,
     xleftmargin = \parindent,
