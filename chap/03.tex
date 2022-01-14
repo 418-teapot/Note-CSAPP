@@ -934,4 +934,98 @@ C 语言中的数组是一种将标量数据聚集成更大数据类型的方式
 \subsection{基本原则}
 
 对于数据类型 T 和整型常数 N，声明：\verb|T A[N];| \\ 起始位置表示为 $x_A$。这个声明有两个效果：首先，它在内存中分配一个 $L \cdot N$ 字节的连续区域，这里 L 是数据类型 T 的大小（单位为字节）。其次，它引入了标识符 \verb|A|，可以用 \verb|A| 来作为指向数组开头的指针，这个指针的值就是 $x_A$。可以用 $0 \sim N-1$ 的整数索引来访问该数组元素。数组元素 $i$ 会被存放在地址为 $x_A + L \cdot i$ 的地方。
+
+\subsection{指针运算}
+
+C 语言允许对指针进行运算，而计算出来的值会根据该指针引用的数据类型的大小进行伸缩。也就是说，如果 p 是一个指向类型为 T 的数据的指针，p 的值为 $x_p$，那么表达式 \verb|p+i| 的值为 $x_p + L \cdot i$，这里 L 是数据类型 T 的大小。
+
+单操作数操作符 \verb|&| 和 \verb|*| 可以产生指针的间接引用指针。也就是，对于一个表示某个对象的表达式 \verb|Expr|， \verb|&Expr| 是给出该对象地址的一个指针。对于一个表示地址的表达式 \verb|AExpr|，\verb|*AExpr| 给出该地址处的值。因此，表达式 \verb|Expr| 和 \verb|*&Expr| 是等价的。可以对数组和指针应用数组下标操作。数组引用 \verb|A[i]| 等同于表达式 \verb|*(A+i)|。它计算第 i 个数组元素的地址，然后访问这个内存位置。
+
+假设整型数组 E 的起始地址和整数索引 i 分别存放在寄存器 \verb|%rdx| 和 \verb|%rcx| 中，下表是一些与 E 有关的表达式：
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llll}
+        \toprule
+        Expression & Type & Value & Assembly code \\
+        \midrule
+        \texttt{E}        & \texttt{int *} & $x_E$              & \texttt{movl \%rdx, \%rax} \\
+        \texttt{E[0]}     & \texttt{int}   & $M[x_E]$           & \texttt{movl (\%rdx), \%eax} \\
+        \texttt{E[i]}     & \texttt{int}   & $M[x_E + 4i]$      & \texttt{movl (\%rdx, \%rcx, 4), \%eax} \\
+        \texttt{\&E[2]}   & \texttt{int *} & $x_E + 8$          & \texttt{leaq 8(\%rdx), \%rax} \\
+        \texttt{E+i-1}    & \texttt{int *} & $x_E + 4i - 12$    & \texttt{leaq -4(\%rdx, \%rcx, 4), \%rax} \\
+        \texttt{*(E+i-3)} & \texttt{int}   & $M[x_E + 4i - 12]$ & \texttt{movl -12(\%rdx, \%rcx, 4), \%eax} \\
+        \texttt{\&E[i]-E} & \texttt{long}  & $i$                & \texttt{movq \%rcx, \%rax} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{嵌套的数组}
+
+要访问多维数组的元素，编译器会以数组起始为基地址，偏移量为索引，产生计算期望的元素的偏移量，然后使用某种 MOV 指令。通常来说，对于一个声明为 \verb|T D[R][C};| 的数组，它的数组元素 \verb|D[i][j]| 的内存地址为：
+\begin{equation}
+    \&D[i][j] = x_D + L(C \cdot i + j)
+    \label{def:2darray_addr}
+\end{equation}
+
+\subsection{定长数组}
+
+C 语言编译器能够优化定长多维数组上的操作。这里我们展示优化等级设置为 \verb|-O1| 时 GCC 和 clang 采用的一些优化。假设将 \verb|fix_matrix| 声明为 $16 \times 16$ 的整型数组：
+\begin{cppcode}
+#define N 16
+typedef int fix_matrix[N][N];
+\end{cppcode}
+
+原始的 C 代码如下：
+\begin{cppcode*}{firstnumber=last}
+// Compute i, k of fixed matrix product
+int fix_prod_ele(fix_matrix A, fix_matrix B, long i, long k) {
+  long j;
+  int result = 0;
+
+  for (j = 0; j < N; j++)
+    result += A[i][j] * B[j][k];
+
+  return result;
+}
+\end{cppcode*}
+
+使用 \verb|gcc -O1| 生成的如下：
+\begin{gascode}
+fix_prod_ele:
+.LFB0:
+    salq    $6, %rdx            # 64 * i
+    addq    %rdx, %rdi          # Aptr = &A[i][0]
+    leaq    (%rsi,%rcx,4), %rax # Bptr = &B[0][k]
+    leaq    1024(%rax), %rsi    # Bend = &B[N][k]
+    movl    $0, %ecx            # result = 0
+.L2:
+    movl    (%rdi), %edx        # read *Aptr
+    imull   (%rax), %edx        # (*Aptr) * (*Bptr)
+    addl    %edx, %ecx          # add to result
+    addq    $4, %rdi            # Aptr++
+    addq    $64, %rax           # Bptr += N
+    cmpq    %rsi, %rax          # compare Bptr with Bend
+    jne     .L2                 # if !=, goto loop
+    movl    %ecx, %eax
+    ret                         # return
+\end{gascode}
+
+使用 \verb|clang -O1| 生成的如下：
+\begin{gascode}
+fix_prod_ele:
+    shlq    $6, %rdx            # 64 * i
+    addq    %rdi, %rdx          # Aptr = &A[i][0]
+    leaq    (%rsi,%rcx,4), %rcx # Bptr = &B[0][k]
+    xorl    %eax, %eax          # result = 0
+    xorl    %esi, %esi          # j = 0
+.LBB0_1:
+    movl    (%rcx), %edi        # Read *Bptr
+    imull   (%rdx,%rsi,4), %edi # *(Aptr + j) * (*Bptr)
+    addl    %edi, %eax          # add to result
+    addq    $1, %rsi            # j++
+    addq    $64, %rcx           # Bptr += 64
+    cmpq    $16, %rsi           # compare j with 16
+    jne     .LBB0_1             # if !=, goto loop
+    retq                        # return
+\end{gascode}
 \endinput
