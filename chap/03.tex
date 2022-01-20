@@ -1120,4 +1120,41 @@ GCC 在产生的代码中加入了一种栈保护者（stack protector）机制�
 
 为了管理变长帧栈，x86-64 代码使用寄存器 \verb|%rbp| 作为帧指针（frame pointer），优势称为 base pointer。待补充。
 
+\section{浮点代码}
+
+AVX 浮点体系结构允许数据存储在 16 歌 YMM 寄存器中，它们的名字为 \verb|%ymm0| \~{} \verb|%ymm15|。每个 YMM 寄存器都是 256 位。当对标量数据操作时，这些寄存器只保存浮点数，而且只使用低 32 位（对于 float）或者 64 位（对于 double）。汇编代码用寄存器的 SSE XMM 寄存器名字 \verb|%xmm0| \~{} \verb|%xmm15| 来引用它们，每个 XMM 寄存器都是对应的 YMM 寄存器的低 128 位。
+
+\begin{figure}[!p]
+    \centering
+    \begin{tikzpicture}
+        \foreach \t [count=\x] in {
+            1st FP arg./Return value,
+            2nd FP argument,
+            3rd FP argument,
+            4th FP argument,
+            5th FP argument,
+            6th FP argument,
+            7th FP argument,
+            8th FP argument,
+            Caller saved,
+            Caller saved,
+            Caller saved,
+            Caller saved,
+            Caller saved,
+            Caller saved,
+            Caller saved,
+            Caller saved
+        } {
+            \draw[fill=White!60!ProcessBlue] (0, -1.4 * \x + 0.5) rectangle (14, -1.4 * \x - 0.5);
+            \draw[fill=White] ($(7, -1.4 * \x + 0.5) + (0, -2pt)$) rectangle ($(14, -1.4 * \x - 0.5) + (-2pt, 2pt)$);
+            \node[right] at (0, -1.4 * \x) {\texttt{\%ymm\x}};
+            \node[right] at (7, -1.4 * \x) {\texttt{\%xmm\x}};
+            \node[right] at (14, -1.4 * \x) {\t};
+        }
+        \node[above] at (0, -0.5) {255};
+        \node[above] at (7, -0.5) {127};
+        \node[above] at (14, -0.5) {0};
+    \end{tikzpicture}
+\end{figure}
+
 \endinput
