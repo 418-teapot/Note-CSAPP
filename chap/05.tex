@@ -144,7 +144,7 @@ long vec_length(vec_ptr v) {
 void combine1(vec_ptr v, data_t *dest) {
   long i;
   *dest = IDENT;
-  for (i = 0; i < vec_legth(v); i++) {
+  for (i = 0; i < vec_length(v); i++) {
     data_t val;
     get_vec_element(v, i, &val);
     *dest = *dest OP val;
@@ -180,3 +180,188 @@ void combine1(vec_ptr v, data_t *dest) {
          \bottomrule
     \end{tabular}
 \end{table}
+
+\section{消除循环的低效率}
+
+可以观察到，过程 combine1 调用函数 \verb|vec_length| 作为 for 循环的测试条件，每次循环迭代时都必须对测试条件求值。另一方面，向量的长度并不会随着循环的进行而改变。因此，只需计算一次向量的长度。
+
+\begin{cppcode}
+// Move call to vec_length out of loop
+void combine2(vec_ptr v, data_t *dest) {
+  long i;
+  long length = vec_length(v);
+  *dest = IDENT;
+  for (i = 0; i < length; i++) {
+    data_t val;
+    get_vec_element(v, i, &val);
+    *dest = *dest OP val;
+  }
+}
+\end{cppcode}
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+         \cmidrule{3-4}
+         \cmidrule{6-7}
+          & & + & * & & + & * \\
+         \midrule
+         \texttt{combine1} & Abstract -O1 & 10.12 & 10.12 & & 10.17 & 11.14 \\
+         \texttt{combine2} & Move \texttt{vec\_length} & 7.02 & 9.03 & & 9.02 & 11.03 \\
+         \bottomrule
+    \end{tabular}
+\end{table}
+
+这个优化是一类常见的优化，称为 code motion（代码移动）。这类优化包括识别要执行多次但是计算结果不会改变的计算。因而可以将计算移动到代码前面不会被多次求值的部分。
+
+\section{减少过程调用}
+
+过程调用会带来开销，而且妨碍大多数形式的程序优化。从 combine2 的代码中我们可以看出，每次循环迭代都会调用 \verb|get_vec_element| 来获取下一个向量元素。对每个向量引用，这个函数要把向量索引 i 与循环边界做比较，很明显会降低效率。在处理任意的数组访问时，边界检查很有用，但是对 combine2 代码的简单分析表明，所有的引用都是合法的。
+
+作为替代，假设为我们的抽象数据类型增加一个函数 \verb|get_vec_start|。这个函数返回数组的起始地址，然后就能写出下面的 combine3 所示的过程，其内循环里没有函数调用。它没有用函数调用来获取每个向量元素，而是直接访问数组。
+
+\begin{cppcode}
+data_t *get_vec_start(vec_ptr v) {
+  return v->data;
+}
+\end{cppcode}
+
+\begin{cppcode}
+// Direct access to vector data
+void combine3(vec_ptr v, data_t *dest) {
+  long i;
+  long length = vec_length(v);
+  data_t *data = get_vec_start(v);
+  *dest = IDENT;
+  for (i = 0; i < length; i++) {
+    *dest = *dest OP data[i];
+  }
+}
+\end{cppcode}
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+         \cmidrule{3-4}
+         \cmidrule{6-7}
+          & & + & * & & + & * \\
+         \midrule
+         \texttt{combine2} & Move \texttt{vec\_length} & 7.02 & 9.03 & & 9.02 & 11.03 \\
+         \texttt{combine3} & Direct data access & 7.17 & 9.02 & & 9.02 & 11.03 \\
+         \bottomrule
+    \end{tabular}
+\end{table}
+
+令人吃惊的是，性能没有明显的提升。事实上，整数求和的性能还略有下降。显然，内循环中的其他操作形成了瓶颈，限制性能超过调用 \verb|get_vec_element|。我们还会再回到这个函数（5.11.2 节），看看为什么 combine2 中反复的边界检查不会让性能更差。
+
+\section{消除不必要的内存引用}
+
+combine3 的代码将合并运算计算的值累积在指针 \verb|dest| 指定的位置。通过检查编译出来的为内循环产生的汇编代码，可以看出这一行为。在此我们给出数据类型为 double，合并运算为乘法的 x86-64 代码：
+
+\begin{gascode}
+# Inner loop of combine3. data_t = double, OP = *
+# dest in %rbx, data in %rax, i in %rcx, length in %r14
+.LBB6_2:                            # loop:
+    movsd   (%rbx), %xmm0           #   Read product from dest
+    mulsd   (%rax,%rcx,8), %xmm0    #   Multiply product by data[i]
+    movsd   %xmm0, (%rbx)           #   Store product at dest
+    addq    $1, %rcx                #   Increment i
+    cmpq    %rcx, %r14              #   Comapre to length
+    jne .LBB6_2                     #   if !=, goto loop
+\end{gascode}
+
+可以看到每次迭代时，累积变量的数值都要从内存读出再写入到内存。这样的读写很浪费，因为每次迭代开始时从 \verb|dest| 读出的值就是上次迭代最后写入的值。我们能够消除这种不必要的内存读写，按照如下 combine4 所示的方式重写代码。引入一个临时变量 \verb|acc|，它在循环中用来累积计算出来的值。只有在循环完成之后才将结果存放到 \verb|dest| 中。
+
+\begin{cppcode}
+// Accumulate result in local variable
+void combine4(vec_ptr v, data_t *dest) {
+  long i;
+  long length = vec_length(v);
+  data_t *data = get_vec_start(v);
+  data_t acc = IDENT;
+  for (i = 0; i < length; i++) {
+    acc = acc OP data[i];
+  }
+  *dest = acc;
+}
+\end{cppcode}
+
+\begin{gascode}
+# Inner loop of combine4. data_t = double, OP = *
+# acc in %xmm0, data in %rax, i in %rcx, length in %rbx
+.LBB7_2:                            # loop:
+    mulsd   (%rax,%rcx,8), %xmm0    #   Multiply acc by data[i]
+    addq    $1, %rcx                #   Increment i
+    cmpq    %rcx, %rbx              #   Compare to length
+    jne .LBB7_2                     #   if !=, goto loop
+\end{gascode}
+
+与 combine3 中的循环相比，我们将每次迭代的内存操作从两次读和一次写减少到只需要一次读。
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+         \cmidrule{3-4}
+         \cmidrule{6-7}
+          & & + & * & & + & * \\
+         \midrule
+         \texttt{combine3} & Direct data access & 7.17 & 9.02 & & 9.02 & 11.03 \\
+         \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
+         \bottomrule
+    \end{tabular}
+\end{table}
+
+需要注意的是，由于内存别名问题，combine3 和 combine4 在某些情况可能会有不同的行为，所以编译器会采用保守的策略，不会自动将 combine3 优化为 combine4，，尽管 combine4 的行为更加符合函数描述的意图。
+
+当用带命令行选项 -O2 编译 combine3 时，得到的代码 CPE 性能远好于使用 -O1 时：
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+         \cmidrule{3-4}
+         \cmidrule{6-7}
+          & & + & * & & + & * \\
+         \midrule
+         \texttt{combine3} & Compiled -O1 & 7.17 & 9.02 & & 9.02 & 11.03 \\
+         \texttt{combine4} & Compiled -O2 & 1.60 & 3.01 & & 3.01 & 5.01 \\
+         \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
+         \bottomrule
+    \end{tabular}
+\end{table}
+
+在检查编译器产生的汇编代码时，我们发现内循环的一个有趣的变化：
+
+\begin{gascode}
+# Inner loop of combine3. data_t = double, OP = *. Compiled -O2
+# dest in %rsi, data in %rcx, i in %rdx, length in %rax
+.LBB6_7:                            # loop:
+    mulsd   (%rcx,%rdx,8), %xmm0    #   Multiply product by data[i]
+    movsd   %xmm0, (%rsi)           #   Store product at dest
+    addq    $1, %rdx                #   Increment i
+    cmpq    %rdx, %rax              #   Compare to length
+    jne .LBB6_7                     #   if !=, goto loop
+\end{gascode}
+
+把上面的代码与用 -O1 产生的代码进行比较：
+
+\begin{gascode}
+# Inner loop of combine3. data_t = double, OP = *. Compiled -O1
+# dest in %rbx, data in %rax, i in %rcx, length in %r14
+.LBB6_2:                            # loop:
+    movsd   (%rbx), %xmm0           #   Read product from dest
+    mulsd   (%rax,%rcx,8), %xmm0    #   Multiply product by data[i]
+    movsd   %xmm0, (%rbx)           #   Store product at dest
+    addq    $1, %rcx                #   Increment i
+    cmpq    %rcx, %r14              #   Comapre to length
+    jne .LBB6_2                     #   if !=, goto loop
+\end{gascode}
+
+我们看到，-O2 中减少了一条 \verb|movsd| 指令，直接从 \verb|dest| 指定的位置读数据。
