@@ -170,14 +170,13 @@ void combine1(vec_ptr v, data_t *dest) {
     \centering
     \begin{tabular}{llccccc}
         \toprule
-         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
-         \cmidrule{3-4}
-         \cmidrule{6-7}
-          & & + & * & & + & * \\
-         \midrule
-         \texttt{combine1} & Abstract unoptimized & 22.68 & 20.02 & & 19.98 & 20.18 \\
-         \texttt{combine1} & Abstract -O1 & 10.12 & 10.12 & & 10.17 & 11.14 \\
-         \bottomrule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine1} & Abstract unoptimized & 22.68 & 20.02 & & 19.98 & 20.18 \\
+        \texttt{combine1} & Abstract -O1 & 10.12 & 10.12 & & 10.17 & 11.14 \\
+        \bottomrule
     \end{tabular}
 \end{table}
 
@@ -203,14 +202,13 @@ void combine2(vec_ptr v, data_t *dest) {
     \centering
     \begin{tabular}{llccccc}
         \toprule
-         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
-         \cmidrule{3-4}
-         \cmidrule{6-7}
-          & & + & * & & + & * \\
-         \midrule
-         \texttt{combine1} & Abstract -O1 & 10.12 & 10.12 & & 10.17 & 11.14 \\
-         \texttt{combine2} & Move \texttt{vec\_length} & 7.02 & 9.03 & & 9.02 & 11.03 \\
-         \bottomrule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine1} & Abstract -O1 & 10.12 & 10.12 & & 10.17 & 11.14 \\
+        \texttt{combine2} & Move \texttt{vec\_length} & 7.02 & 9.03 & & 9.02 & 11.03 \\
+        \bottomrule
     \end{tabular}
 \end{table}
 
@@ -245,14 +243,13 @@ void combine3(vec_ptr v, data_t *dest) {
     \centering
     \begin{tabular}{llccccc}
         \toprule
-         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
-         \cmidrule{3-4}
-         \cmidrule{6-7}
-          & & + & * & & + & * \\
-         \midrule
-         \texttt{combine2} & Move \texttt{vec\_length} & 7.02 & 9.03 & & 9.02 & 11.03 \\
-         \texttt{combine3} & Direct data access & 7.17 & 9.02 & & 9.02 & 11.03 \\
-         \bottomrule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine2} & Move \texttt{vec\_length} & 7.02 & 9.03 & & 9.02 & 11.03 \\
+        \texttt{combine3} & Direct data access & 7.17 & 9.02 & & 9.02 & 11.03 \\
+        \bottomrule
     \end{tabular}
 \end{table}
 
@@ -263,7 +260,7 @@ void combine3(vec_ptr v, data_t *dest) {
 combine3 的代码将合并运算计算的值累积在指针 \verb|dest| 指定的位置。通过检查编译出来的为内循环产生的汇编代码，可以看出这一行为。在此我们给出数据类型为 double，合并运算为乘法的 x86-64 代码：
 
 \begin{gascode}
-# Inner loop of combine3. data_t = double, OP = *
+# Inner loop of combine3. data_t = double, OP = *. Compiled by clang -O1.
 # dest in %rbx, data in %rax, i in %rcx, length in %r14
 .LBB6_2:                            # loop:
     movsd   (%rbx), %xmm0           #   Read product from dest
@@ -291,7 +288,7 @@ void combine4(vec_ptr v, data_t *dest) {
 \end{cppcode}
 
 \begin{gascode}
-# Inner loop of combine4. data_t = double, OP = *
+# Inner loop of combine4. data_t = double, OP = *. Compiled by clang -O1.
 # acc in %xmm0, data in %rax, i in %rcx, length in %rbx
 .LBB7_2:                            # loop:
     mulsd   (%rax,%rcx,8), %xmm0    #   Multiply acc by data[i]
@@ -306,14 +303,13 @@ void combine4(vec_ptr v, data_t *dest) {
     \centering
     \begin{tabular}{llccccc}
         \toprule
-         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
-         \cmidrule{3-4}
-         \cmidrule{6-7}
-          & & + & * & & + & * \\
-         \midrule
-         \texttt{combine3} & Direct data access & 7.17 & 9.02 & & 9.02 & 11.03 \\
-         \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
-         \bottomrule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine3} & Direct data access & 7.17 & 9.02 & & 9.02 & 11.03 \\
+        \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
+        \bottomrule
     \end{tabular}
 \end{table}
 
@@ -325,22 +321,21 @@ void combine4(vec_ptr v, data_t *dest) {
     \centering
     \begin{tabular}{llccccc}
         \toprule
-         \multirow{2}{*}{Function} & \multirow{2}{*}{Method} & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
-         \cmidrule{3-4}
-         \cmidrule{6-7}
-          & & + & * & & + & * \\
-         \midrule
-         \texttt{combine3} & Compiled -O1 & 7.17 & 9.02 & & 9.02 & 11.03 \\
-         \texttt{combine4} & Compiled -O2 & 1.60 & 3.01 & & 3.01 & 5.01 \\
-         \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
-         \bottomrule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine3} & Compiled -O1 & 7.17 & 9.02 & & 9.02 & 11.03 \\
+        \texttt{combine4} & Compiled -O2 & 1.60 & 3.01 & & 3.01 & 5.01 \\
+        \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
+        \bottomrule
     \end{tabular}
 \end{table}
 
 在检查编译器产生的汇编代码时，我们发现内循环的一个有趣的变化：
 
 \begin{gascode}
-# Inner loop of combine3. data_t = double, OP = *. Compiled -O2
+# Inner loop of combine3. data_t = double, OP = *. Compiled by clang -O2.
 # dest in %rsi, data in %rcx, i in %rdx, length in %rax
 .LBB6_7:                            # loop:
     mulsd   (%rcx,%rdx,8), %xmm0    #   Multiply product by data[i]
@@ -353,7 +348,7 @@ void combine4(vec_ptr v, data_t *dest) {
 把上面的代码与用 -O1 产生的代码进行比较：
 
 \begin{gascode}
-# Inner loop of combine3. data_t = double, OP = *. Compiled -O1
+# Inner loop of combine3. data_t = double, OP = *. Compiled by clang -O1.
 # dest in %rbx, data in %rax, i in %rcx, length in %r14
 .LBB6_2:                            # loop:
     movsd   (%rbx), %xmm0           #   Read product from dest
@@ -406,8 +401,7 @@ EU 接收来自取指单元的操作。通常，每个时钟周期会接收多�
     \begin{tabular}{lccccccc}
         \toprule
         & \multicolumn{3}{c}{Integer} & & \multicolumn{3}{c}{Floating point} \\
-        \cmidrule{2-4}
-        \cmidrule{6-8}
+        \cmidrule{2-4} \cmidrule{6-8}
         Operation & Latency & Issue & Capacity & & Latency & Issue & Capacity \\
         \midrule
         Addition & 1 & 1 & 4 & & 3 & 1 & 1 \\
@@ -436,3 +430,64 @@ EU 接收来自取指单元的操作。通常，每个时钟周期会接收多�
         \bottomrule
     \end{tabular}
 \end{table}
+
+Latency bound 给出了任何必须按照严格顺序完成 combine 运算的函数所需要的最小的 CPE 值。根据功能单元产生结果的最大速率，throughput bound 给出了 CPE 的最小界限。例如，因为只有一个整数乘法器，它的发射时间为 1 个时钟周期，处理器不可能支持每个时钟周期大于 1 条乘法的速度。另一方面，4 个功能单元都可以执行整数加法，处理器就有可能持续每个周期执行 4 个操作的速率，不幸的是，因为需要从内存读数据，这造成了另一个吞吐量界限。2 个加载单元限制了处理器每个时钟周期最多只能读取 2 个数据值，从而使得吞吐量界限为 0.5。
+
+\subsection{处理器操作的抽象模型}
+
+作为分析在现代处理器上执行的机器级程序性能的一个工作，我们会使用程序的 data-flow 表示，这是一种图形化的表示方法，展现了不同操作之间的数据相关是如何限制它们的执行顺序的。这些限制形成了图中的 critical path，这是执行一组机器指令所需时钟周期数的一个下界。
+
+到目前为止，combine4 是最快的代码：
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
+        Latency bound & & 1.00 & 3.00 & & 3.00 & 5.00 \\
+        Throughput bound & & 0.50 & 1.00 & & 1.00 & 0.50 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{从机器级代码到数据流图}
+
+以 combine4 为例来描述数据流表示法。
+
+\begin{gascode}
+# Inner loop of combine4. data_t = double, OP = *. Compiled by gcc -O1.
+# acc in %xmm0, data+i in %rdx, data+length in %rax
+.L25:                           # loop:
+    mulsd   (%rdx), %xmm0       #   Multiply acc by data[i]
+    addq    $8, %rdx            #   Increment data+i
+    cmpq    %rax, %rdx          #   Compare to data+length
+    jne     .L25                #   If !=, goto loop
+\end{gascode}
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.5]{img/5-2}
+\end{figure}
+
+对于形成循环的代码片段，我们可以将访问到的寄存器分为 4 类：
+\begin{itemize}
+    \item Read-only. 这些寄存器只用作源值，可以作为数据，也可以用来计算内存地址，但是在循环中它们是不会被修改的，循环 combine4 的只读寄存器是 \verb|%rax|。
+    \item Write-only. 这些寄存器作为数据传送操作的目的。在本循环中没有这样的寄存器。
+    \item Local. 这些寄存器在循环内部被修改和使用，迭代与迭代之间不相关。在这个循环中，条件码寄存器就是例子：\verb|cmp| 操作会修改它们，然后 \verb|jne| 操作会使用它们，不过这种相关是在单次迭代之内的。
+    \item Loop. 对于循环来说，这些寄存器既作为源值，又作为目的，一次迭代中产生的值会在另一次迭代中用到。可以看到，\verb|%rdx| 和 \verb|%xmm0| 是 combine4 的循环寄存器，对应于程序值 \verb|data+i| 和 \verb|acc|。
+\end{itemize}
+
+循环寄存器之间的操作链决定了限制性能的数据相关。
+
+下图是上图的图形化表示的进一步改进，目标是只给除影响程序执行时间的操作和数据相关。图 a 中，重新排列了操作符，更清晰地表明了从顶部源寄存器（只读寄存器和循环寄存器）到底部目的寄存器（只写寄存器和循环寄存器）的数据流。
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.4]{img/5-3}
+\end{figure}
+
+图 b 中，消除了左边标识为白色的操作符，而且只保留了循环寄存器。剩下的是一个抽象的模板，表明的是由于循环的一次迭代在循环寄存器中形成的数据相关。在这个图中可以看到，从一次迭代到下一次迭代有 2 个数据相关。在一边，我们看到存储在寄存器 \verb|%xmm0| 中的程序值 \verb|acc| 的连续的值之间有相关。通过将 \verb|acc| 的旧值乘以一个数据元素，循环计算出 \verb|acc| 的新值，这个数据元素是由 \verb|load| 操作产生的。在另一边，我们看到循环索引 \verb|i| 的旧值用来计算 \verb|load| 操作的地址，然后 \verb|add| 操作也会增加它的值，计算出新值。
