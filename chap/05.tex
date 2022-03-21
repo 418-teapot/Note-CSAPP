@@ -506,3 +506,67 @@ Latency bound 给出了任何必须按照严格顺序完成 combine 运算的函
 总结一下 combine4 的性能分析：我们对程序操作的抽象数据流表示说明，combine4 的关键路径长 $L \cdot n$ 是由对程序值 \verb|acc| 的连续更新造成的，这条路径将 CPE 限制为最多 L。除了整数加法外，对于所有的其他情况，测量出来的 CPE 确实等于 L，对于整数加法，测量出来的 CPE 为 1.27 而不是根据关键路径的长度所期望的 1.00。
 
 看上去，延迟界限是基本的限制，决定了 combine 运算能执行多快。接下来的任务是重新调整操作的结构，增强指令级并行性。
+
+\section{循环展开}
+
+循环展开是一种程序变换，通过增加每次迭代计算的元素的数量，减少循环的迭代次数。循环展开能够从两个方面改进程序的性能。首先，它减少了不直接有助于程序结果的操作的数量，例如循环索引计算和条件分支。第二，它提供了一些方法，可以进一步变化代码，减少了整个计算中关键路径上的操作数量。
+
+下图是 combine 代码的使用 $2 \times 1$ 循环展开的版本。第一个循环每次处理数组的两个元素，也就是每次迭代，循环索引 $i$ 加 2，在一次迭代中，对数组元素 $i$ 和 $i+1$ 使用 combine 运算。
+
+\begin{cppcode}
+// 2 x 1 loop unrolling
+void combine5(vec_ptr v, data_t *dest) {
+  long i;
+  long length = vec_length(v);
+  long limit = length - 1;
+  data_t *data = get_vec_start(v);
+  data_t acc = IDENT;
+
+  // Combine 2 elements at a time
+  for (i = 0; i < limit; i += 2) {
+    acc = (acc OP data[i]) OP data[i+1];
+  }
+
+  // Finish any remaining elements
+  for (; i < length; ++i) {
+    acc = acc OP data[i];
+  }
+  *dest = acc;
+}
+\end{cppcode}
+
+把这个思想归纳为对一个循环按任意因子 $k$ 进行展开，由此产生 $k \times 1$ 循环展开。
+
+当测量展开次数 $k = 2$ 和 $k = 3$ 的展开代码的性能时，得到下面的结果：
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine4} & No unrolling & 1.27 & 3.01 & & 3.01 & 5.01 \\
+        \texttt{combine5} & $2 \times 1$ unrolling & 1.01 & 3.01 & & 3.01 & 5.01 \\
+                          & $3 \times 1$ unrolling & 1.01 & 3.01 & & 3.01 & 5.01 \\
+        \\
+        Latency bound & & 1.00 & 3.00 & & 3.00 & 5.00 \\
+        Throughput bound & & 0.50 & 1.00 & & 1.00 & 0.50 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+可以看到对于整数加法，CPE 有所改进，会有这样的结果是得益于减少了循环开销操作。相对于计算向量和所需要的加法数量，降低开销操作的数量，此时，整数加法的一个周期的延迟成为了限制性能的因素。另一方面，其他情况都已经达到了其延迟界限，并没有性能提高。
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.5]{img/5-5}
+\end{figure}
+
+可以看到，关键路径还是 n 个 mul 操作，虽然迭代次数减半了，但是每次迭代中有两个顺序的乘法操作。这个关键路径是循环没有展开代码的性能制约因素，而它仍然是 $k \times 1$ 循环展开代码的性能制约因素。
+
+\begin{figure}[!ht]
+    \centering
+    \includegraphics[scale=0.5]{img/5-6}
+\end{figure}
