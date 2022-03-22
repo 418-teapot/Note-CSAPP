@@ -561,12 +561,99 @@ void combine5(vec_ptr v, data_t *dest) {
 
 \begin{figure}[!ht]
     \centering
-    \includegraphics[scale=0.5]{img/5-5}
+    \begin{minipage}{0.65\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-5}
+        \includegraphics[width=0.9\textwidth]{img/5-6}
+    \end{minipage}
+    \begin{minipage}{0.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-7}
+    \end{minipage}
 \end{figure}
 
 可以看到，关键路径还是 n 个 mul 操作，虽然迭代次数减半了，但是每次迭代中有两个顺序的乘法操作。这个关键路径是循环没有展开代码的性能制约因素，而它仍然是 $k \times 1$ 循环展开代码的性能制约因素。
 
+\section{提高并行性}
+
+在此，程序的性能是受运算单元的延迟限制的。由于执行加法和乘法的功能单元是完全流水化的，这意味着它们可以每个时钟周期开始一个新操作，并且有些操作可以被多个功能单元执行。硬件具有以更高速率执行乘法和加法的潜力，但是代码不能利用这种能力，既是是使用循环展开也不能，这是因为我们将累计值放在一个单独的变量 acc 中。在前面的计算完成之前，都不能计算 acc 的新值。
+
+\subsection{多个累计变量}
+
+对于一个可结合和可交换的 combine 运算来说，我们可以通过将一组 combine 运算分割成两个或更多的部分，并在最后合并结果来提高性能。例如，$P_n$ 表示元素 $a_0, a_1, \cdots, a_{n-1}$ 的乘积：
+
+\[
+    P_n = \prod_{i=0}^{n-1} a_i
+\]
+
+假设 n 为偶数，还可以把它写成 $P_n = PE_n \times PO_n$，这里 $PE_n$ 是索引值为偶数的元素的乘积，而 $PO_n$ 是索引值为奇数的元素的乘积：
+
+\begin{align*}
+    PE_n & = \prod_{i=0}^{n/2-1} a_{2i} \\
+    PO_n & = \prod_{i=0}^{n/2-1} a_{2i+1}
+\end{align*}
+
+下面是使用这种方法的代码。它既使用了两次循环，以使每次迭代合并更多的元素，也使用了两路并行，将索引值为偶数的元素累积在变量 acc0 中，而索引值为奇数的元素累积在变量 acc1 中。因此，我们将其称为 $2 \times 2$ 循环展开。
+
+\begin{cppcode}
+// 2 x 2 loop unrolling
+void combine6(vec_ptr v, data_t *dest) {
+  long i;
+  long length = vec_length(v);
+  long limit = length - 1;
+  data_t *data = get_vec_start(v);
+  data_t acc0 = IDENT;
+  data_t acc1 = IDENT;
+
+  // Combine 2 elements at a time
+  for (i = 0; i < limit; i += 2) {
+    acc0 = acc0 OP data[i];
+    acc1 = acc1 OP data[i+1];
+  }
+
+  // Finish any remaining elements
+  for (; i < length; ++i) {
+    acc0 = acc0 OP data[i];
+  }
+  *dest = acc0 OP acc1;
+}
+\end{cppcode}
+
+可以得到下面的性能：
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
+        \texttt{combine5} & $2 \times 1$ unrolling & 1.01 & 3.01 & & 3.01 & 5.01 \\
+        \texttt{combine6} & $2 \times 2$ unrolling & 0.81 & 1.51 & & 1.51 & 2.51 \\
+        \\
+        Latency bound & & 1.00 & 3.00 & & 3.00 & 5.00 \\
+        Throughput bound & & 0.50 & 1.00 & & 1.00 & 0.50 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+要理解 combine6 的性能，我们从下图所示的代码和操作序列开始。同 combine5 一样，这个内循环包括两个 vmulsd 运算，但是这些指令被翻译成读写不同寄存器的 mul 操作，它们之间没有数据相关。然后，把这个模板复制 n/2 次，就是在一个长度为 n 的向量上执行这个函数的模型。可以看到，现在有两条关键路径，一条对应于计算索引为偶数的元素的乘积（acc0），另一条对应于计算索引为奇数的元素的乘积（acc1），每条关键路径只包含 n/2 个操作。
+
 \begin{figure}[!ht]
     \centering
-    \includegraphics[scale=0.5]{img/5-6}
+    \begin{minipage}{0.65\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-8}
+        \includegraphics[width=\textwidth]{img/5-9}
+    \end{minipage}
+    \begin{minipage}{0.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-10}
+    \end{minipage}
 \end{figure}
+
+我们可以将多个累积变量变换归纳为将循环展开 $k$ 次，以及并行累积 $k$ 个值，得到 $k \times k$ 循环展开。通常，只有保持能够执行该操作的所有功能单元的流水线都是满的，程序才能达到这个操作的吞吐量界限。对延迟为 $L$，容量为 $C$ 的操作而言，这就要求循环展开因子 $k \geq C \cdot L$。
+
+在执行 $k \times k$ 循环展开变换时，必须考虑是否要保留原始函数的功能。补码运算是可交换和可结合的，因此，对于整数数据类型，在所有可能的情况下，combine6 计算出的结果都和 combine5 计算出的结果相同。因此，优化编译器潜在地能够将 combine4 中所示的代码首先转换成 combine5 的二路循环展开的版本，然后再通过引入并行性，将之转换成 combine6 的版本。另一方面，浮点乘法和加法不是可结合的，大多数编译器不会尝试对浮点代码进行转换。
