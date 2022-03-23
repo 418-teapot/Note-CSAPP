@@ -657,3 +657,77 @@ void combine6(vec_ptr v, data_t *dest) {
 我们可以将多个累积变量变换归纳为将循环展开 $k$ 次，以及并行累积 $k$ 个值，得到 $k \times k$ 循环展开。通常，只有保持能够执行该操作的所有功能单元的流水线都是满的，程序才能达到这个操作的吞吐量界限。对延迟为 $L$，容量为 $C$ 的操作而言，这就要求循环展开因子 $k \geq C \cdot L$。
 
 在执行 $k \times k$ 循环展开变换时，必须考虑是否要保留原始函数的功能。补码运算是可交换和可结合的，因此，对于整数数据类型，在所有可能的情况下，combine6 计算出的结果都和 combine5 计算出的结果相同。因此，优化编译器潜在地能够将 combine4 中所示的代码首先转换成 combine5 的二路循环展开的版本，然后再通过引入并行性，将之转换成 combine6 的版本。另一方面，浮点乘法和加法不是可结合的，大多数编译器不会尝试对浮点代码进行转换。
+
+\subsection{重新结合变换}
+
+现在来探讨另一种打破顺序相关从而使性能超过延迟界限的方法。我们看到过做 $k \times 1$ 循环展开的 combine5 的数据相关，对代码做很小的改动，可以从根本改变合并执行的方式，也极大地提高了程序的性能。
+
+下面给出了 combine7，它与 combine5 的展开代码的唯一区别在于内循环中元素合并的方式。在 combine5 中，合并是以下面这条语句来实现的：
+\begin{cppcode*}{linenos=false}
+    acc = (acc OP data[i]) OP data[i+1];
+\end{cppcode*}
+而在 combine7 中，合并是以这条语句来实现的：
+\begin{cppcode*}{linenos=false}
+    acc = acc OP (data[i] OP data[i+1]);
+\end{cppcode*}
+差别仅在于两个括号是如何放置的。我们称之为 reassociation transformation（重新结合变换），因为括号改变了向量元素与累积值 acc 的合并顺序，产生了我们称为 $2 \times 1a$ 的循环展开形式。
+
+\begin{cppcode}
+// 2 x 1a loop unrolling
+void combine7(vec_ptr v, data_t *dest) {
+  long i;
+  long length = vec_length(v);
+  long limit = length - 1;
+  data_t *data = get_vec_start(v);
+  data_t acc = IDENT;
+
+  // Combine 2 elements at a time
+  for (i = 0; i < limit; i += 2) {
+    acc = acc OP (data[i] OP data[i+1]);
+  }
+
+  // Finish any remaining elements
+  for (; i < length; ++i) {
+    acc = acc OP data[i];
+  }
+  *dest = acc;
+}
+\end{cppcode}
+
+CPE 如下：
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine4} & Accumulate in temporary & 1.27 & 3.01 & & 3.01 & 5.01 \\
+        \texttt{combine5} & $2 \times 1$ unrolling & 1.01 & 3.01 & & 3.01 & 5.01 \\
+        \texttt{combine6} & $2 \times 2$ unrolling & 0.81 & 1.51 & & 1.51 & 2.51 \\
+        \texttt{combine7} & $2 \times 1a$ unrolling & 1.01 & 1.51 & & 1.51 & 2.51 \\
+        \\
+        Latency bound & & 1.00 & 3.00 & & 3.00 & 5.00 \\
+        Throughput bound & & 0.50 & 1.00 & & 1.00 & 0.50 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+除了整数加外，都突破了延迟界限造成的限制。下图说明了 combine7 内循环的代码是如何被译码成操作，以及由此得到的数据相关。可以看到关键路径上只有 n/2 个操作，每次迭代内的第一个乘法都不需要等待前一次迭代的累积值就可以执行，因此，最小可能的 CPE 就减少了 2 倍。
+
+\begin{figure}[!ht]
+    \centering
+    \begin{minipage}{0.65\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-11}
+        \includegraphics[width=\textwidth]{img/5-12}
+    \end{minipage}
+    \begin{minipage}{0.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-13}
+    \end{minipage}
+\end{figure}
+
+重新结合变换能够减少计算中关键路径上操作的数量，通过更好地利用功能单元的流水线能力得到更好的性能。大多数编译器不会尝试对浮点运算做重新结合被，因为这些运算不保证是可结合的。
