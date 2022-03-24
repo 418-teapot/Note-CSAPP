@@ -694,7 +694,18 @@ void combine7(vec_ptr v, data_t *dest) {
 }
 \end{cppcode}
 
-CPE 如下：
+\begin{figure}[!ht]
+    \centering
+    \begin{minipage}{0.65\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-11}
+        \includegraphics[width=\textwidth]{img/5-12}
+    \end{minipage}
+    \begin{minipage}{0.33\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{img/5-13}
+    \end{minipage}
+\end{figure}
 
 \begin{table}[!ht]
     \centering
@@ -715,19 +726,30 @@ CPE 如下：
     \end{tabular}
 \end{table}
 
-除了整数加外，都突破了延迟界限造成的限制。下图说明了 combine7 内循环的代码是如何被译码成操作，以及由此得到的数据相关。可以看到关键路径上只有 n/2 个操作，每次迭代内的第一个乘法都不需要等待前一次迭代的累积值就可以执行，因此，最小可能的 CPE 就减少了 2 倍。
-
-\begin{figure}[!ht]
-    \centering
-    \begin{minipage}{0.65\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img/5-11}
-        \includegraphics[width=\textwidth]{img/5-12}
-    \end{minipage}
-    \begin{minipage}{0.33\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{img/5-13}
-    \end{minipage}
-\end{figure}
+除了整数加外，都突破了延迟界限造成的限制。上图说明了 combine7 内循环的代码是如何被译码成操作，以及由此得到的数据相关。可以看到关键路径上只有 n/2 个操作，每次迭代内的第一个乘法都不需要等待前一次迭代的累积值就可以执行，因此，最小可能的 CPE 就减少了 2 倍。
 
 重新结合变换能够减少计算中关键路径上操作的数量，通过更好地利用功能单元的流水线能力得到更好的性能。大多数编译器不会尝试对浮点运算做重新结合被，因为这些运算不保证是可结合的。
+
+\section{优化合并代码的结果小结}
+
+下表总结了对于标量代码所获得的结果，没有使用 AVX 向量指令提供的向量并行性：
+
+\begin{table}[!ht]
+    \centering
+    \begin{tabular}{llccccc}
+        \toprule
+        & & \multicolumn{2}{c}{Integer} & & \multicolumn{2}{c}{Floating point} \\
+        \cmidrule{3-4} \cmidrule{6-7}
+        Function & Method & + & * & & + & * \\
+        \midrule
+        \texttt{combine1} & Abstract -O1 & 10.12 & 10.12 & & 10.17 & 11.14 \\
+        \texttt{combine6} & $2 \times 2$ unrolling & 0.81 & 1.51 & & 1.51 & 2.51 \\
+                        & $10 \times 10$ unrolling & 0.55 & 1.00 & & 1.01 & 0.52 \\
+        \\
+        Latency bound & & 1.00 & 3.00 & & 3.00 & 5.00 \\
+        Throughput bound & & 0.50 & 1.00 & & 1.00 & 0.50 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+使用多项优化技术，我们获得的 CPE 已经接近于 0.50 和 1.00 的吞吐量界限，只受限于功能单元的容量。与原始代码相比提升了 10 \~ 20 倍，且使用普通的 C 代码和标准编译器就获得了所有这些改进。这个例子说明现代处理器具有相当的计算能力，但是我们可能需要按非常程式化的方式来编写程序以便将这些能力诱发出来。
