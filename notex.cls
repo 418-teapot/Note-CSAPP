@@ -28,12 +28,14 @@
     \vspace{\stretch{2}}
 }
 
+\RequirePackage{multirow}
+
 \RequirePackage{color}
 \RequirePackage[usenames, dvipsnames]{xcolor}
 \definecolor{light-gray}{gray}{0.95}
 
 % code highlight
-\RequirePackage{minted}
+\RequirePackage[outputdir=build]{minted}
 \setminted{
     bgcolor = light-gray,
     xleftmargin = \parindent,

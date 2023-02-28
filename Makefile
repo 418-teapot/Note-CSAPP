@@ -1,20 +1,20 @@
 NOTEX   = notex
-MYNAME  = example
 PDF     = $(MYNAME).pdf
 REQUIRE = $(NOTEX).cls
-TEMP    = $(MYNAME).{aux,log,idx,ind,ilg,out,toc,los,synctex.gz}
 MINTED_TEMP = _minted-$(MYNAME)
 
 TEX     = latexmk -xelatex
 MODE    = -shell-escape
+CD		= -cd ../
+OUTDIR  = -outdir=build
 
 all: $(PDF)
 
 $(PDF): $(REQUIRE) FORCE_MAKE
-	$(TEX) $(MODE) $(MYNAME)
+	$(TEX) $(MODE) $(CD)$(MYNAME) $(OUTDIR)
 
 clean:
-	$(TEX) -C $(MYNAME)
-	rm -r $(MINTED_TEMP)
+	$(TEX) -C $(CD)$(MYNAME) $(OUTDIR)
+	rm -r ../build/$(MINTED_TEMP)
 
 .PHONY: all clean FORCE_MAKE
