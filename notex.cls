@@ -1,4 +1,4 @@
-\ProvidesClass{NoTex}[2021/12/16 v0.0.2]
+\ProvidesClass{NoTex}[2023/02/28 v0.0.3]
 
 \LoadClass[UTF8]{ctexrep}
 
@@ -28,44 +28,18 @@
     \vspace{\stretch{2}}
 }
 
-%\RequirePackage{color, xcolor}
 \RequirePackage{color}
 \RequirePackage[usenames, dvipsnames]{xcolor}
 \definecolor{light-gray}{gray}{0.95}
 
+% code highlight
 \RequirePackage{minted}
-\newminted{cpp}{
+\setminted{
     bgcolor = light-gray,
     xleftmargin = \parindent,
     linenos = true,
     autogobble = true,
     mathescape = true
-}
-\newmintinline{cpp}{}
-\newminted{gas}{
-    bgcolor = light-gray,
-    xleftmargin = \parindent,
-    autogobble = true,
-    linenos = true
-}
-\newminted{nasm}{
-    bgcolor = light-gray,
-    xleftmargin = \parindent,
-    autogobble = true,
-    linenos = true
-}
-\newminted{bash}{
-    bgcolor = light-gray,
-    xleftmargin = \parindent,
-    linenos = true,
-    autogobble = true
-}
-\newmintinline{bash}{}
-\newminted{text}{
-    bgcolor = light-gray,
-    xleftmargin = \parindent,
-    linenos = true,
-    autogobble = true
 }
 
 \RequirePackage{enumitem}
