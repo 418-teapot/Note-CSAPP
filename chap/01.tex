@@ -5,14 +5,14 @@
 我们将跟踪 hello 程序的生命周期来开始对系统的学习——从它被程序员创建开始，到在系统上运行，输出简单的信息，然后中止。
 
 hello 程序（hello.c）：
-\begin{cppcode}
+\begin{minted}{cpp}
 #include <stdio.h>
 
 int main() {
   printf("hello, world\n");
   return 0;
 }
-\end{cppcode}
+\end{minted}
 
 \section{信息就是位 + 上下文}
 
@@ -44,9 +44,9 @@ Linux 系统上，从源文件到目标文件的转化是由编译期驱动程�
 \end{tikzfig}
 
 \begin{itemize}
-    \item 预处理阶段。预处理器（cpp）根据以字符 \# 开头的命令，修改原始的 C 程序。比如 hello.c 中第 1 行的 \cppinline{#include <stdio.h>} 命令告诉预处理器读取系统头文件 stdio.h 的内容，并把它直接插入程序文本中。结果就得到了另一个 C 程序，通常是以 .i 作为文件扩展名。
+    \item 预处理阶段。预处理器（cpp）根据以字符 \# 开头的命令，修改原始的 C 程序。比如 hello.c 中第 1 行的 \mintinline{cpp}{#include <stdio.h>} 命令告诉预处理器读取系统头文件 stdio.h 的内容，并把它直接插入程序文本中。结果就得到了另一个 C 程序，通常是以 .i 作为文件扩展名。
     \item 编译阶段。编译器（cc1）将文本文件 hello.i 翻译成文本文件 hello.s ，它包含一个汇编语言程序。该程序包含函数 main 的定义，如下所示：
-    \begin{gascode}
+    \begin{minted}{gas}
     main:
         subq $8, %rsp
         movl $.LC0, %edi
@@ -54,7 +54,7 @@ Linux 系统上，从源文件到目标文件的转化是由编译期驱动程�
         movl $0, %eax
         addq $8, %rsp
         ret
-    \end{gascode}
+    \end{minted}
     定义中 2\~{}7 行的每条语句都以一种文本格式描述了一条低级机器语言指令。汇编语言是非常有用的，因为它为不同高级语言的不同编译器提供了通用的输出语言。
     \item 汇编阶段。接下来，汇编器（as）将 hello.s 翻译成机器语言指令，把这些指令打包成一种叫做可重定位目标程序（relocatable object program）的格式，并将结果保存在目标文件 hello.o 中。
     \item 链接阶段。hello 程序调用了 printf 函数，它是 C 编译器提供的标准 C 库中的一个函数。printf 函数存在于一个名为 printf.o 的单独的预编译好了的目标文件中，而这个文件必须以某种方式合并到我们的 hello.o 程序中。链接器（ld）就负责处理这种合并。结果就得到 hello 文件，它是一个可执行目标文件，可以被加载到内存中，由系统执行。
@@ -94,9 +94,9 @@ I/O（输入/输出）设备是系统与外部世界的联系通道。每个 I/O
 
 初始时，shell 程序执行它的指令，等待我们输入一个命令。当我们在键盘上输入字符串 ``./hello'' 后，shell 程序将字符逐一读入寄存器，再把它存放到内存中。
 
-当我们在键盘上敲回车键时，shell 程序就知道我们已经结束了命令的输入。然后 shell 执行一系列指令来加载可执行的 hello 文件，这些指令将 hello 目标文件中的代码和数据通过 DMA 的方式直接从磁盘复制到主存。数据包括最终会被输出的字符串 \cppinline{"hello, world\n"}。
+当我们在键盘上敲回车键时，shell 程序就知道我们已经结束了命令的输入。然后 shell 执行一系列指令来加载可执行的 hello 文件，这些指令将 hello 目标文件中的代码和数据通过 DMA 的方式直接从磁盘复制到主存。数据包括最终会被输出的字符串 \mintinline{cpp}{"hello, world\n"}。
 
-一旦目标文件 hello 中的代码和数据被加载到主存，处理器就开始执行 hello 程序的 main 中的机器语言指令。这些指令将 \cppinline{"hello, world\n"} 字符串中的字节从主存复制到寄存器中，再从寄存器中复制到显示设备，最终显示在屏幕上。
+一旦目标文件 hello 中的代码和数据被加载到主存，处理器就开始执行 hello 程序的 main 中的机器语言指令。这些指令将 \mintinline{cpp}{"hello, world\n"} 字符串中的字节从主存复制到寄存器中，再从寄存器中复制到显示设备，最终显示在屏幕上。
 
 \section{高速缓存至关重要}
 

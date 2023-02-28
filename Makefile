@@ -1,20 +1,9 @@
-NOTEX   = notex
-MYNAME  = csapp
-PDF     = $(MYNAME).pdf
-REQUIRE = $(NOTEX).cls
-TEMP    = $(MYNAME).{aux,log,idx,ind,ilg,out,toc,los,synctex.gz}
-MINTED_TEMP = _minted-$(MYNAME)
+export MYNAME = csapp
 
-TEX     = latexmk -xelatex
-MODE    = -shell-escape
-
-all: $(PDF)
-
-$(PDF): $(REQUIRE) FORCE_MAKE
-	$(TEX) $(MODE) $(MYNAME)
+all:
+	$(MAKE) -C NoTex
 
 clean:
-	$(TEX) -C $(MYNAME)
-	rm -r $(MINTED_TEMP)
+	$(MAKE) -C NoTex clean
 
-.PHONY: all clean FORCE_MAKE
+.PHONY: all

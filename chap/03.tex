@@ -27,20 +27,20 @@ Intel 处理器系列俗称 x86,经历了一个长期的、不断进化的发展
 
 假设 C 语言代码文件 \verb|mstore.c|：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 long mult2(long, long);
 
 void multstore(long x, long y, long *dest) {
   long t = mult2(x, y);
   *dest = t;
 }
-\end{cppcode}
+\end{minted}
 
 在命令行上使用 \verb|-S| 选项，就能看到产生的汇编代码：\verb|gcc -Og -S mstore.c| 或者 \verb|clang -Og -S mstore.c|。
 
 汇编代码文件包含各种声明，包含下面几行：
 
-\begin{gascode}
+\begin{minted}{gas}
 multstore:
     pushq   %rbx
     movq    %rdx, %rbx
@@ -48,7 +48,7 @@ multstore:
     movq    %rax, (%rbx)
     popq    %rbx
     retq
-\end{gascode}
+\end{minted}
 
 如果使用 \verb|-c| 选项，会编译并汇编该代码：\verb|gcc -Og -c mstore.c| 或者 \verb|clang -Og -c mstore.c|。
 
@@ -60,7 +60,7 @@ multstore:
 
 结果如下：
 
-\begin{textcode}
+\begin{minted}{text}
 0000000000000000 multstore:
     0: 53                               pushq   %rbx
     1: 48 89 d3                         movq    %rdx, %rbx
@@ -68,7 +68,7 @@ multstore:
     9: 48 89 03                         movq    %rax, (%rbx)
     c: 5b                               popq    %rbx
     d: c3                               retq
-\end{textcode}
+\end{minted}
 
 其中一些关于机器代码和它的反汇编表示的特性值得主义：
 
@@ -81,7 +81,7 @@ multstore:
 
 生成实际可执行的代码需要对一组目标代码文件运行链接器，而这一组目标代码文件中必须包含有一个 \verb|main| 函数。假设有文件 \verb|main.c|：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 #include <stdio.h>
 
 void multstore(long, long, long *);
@@ -96,13 +96,13 @@ long mult2(long a, long b) {
   long s = a * b;
   return s;
 }
-\end{cppcode}
+\end{minted}
 
 然后，生成可执行文件 \verb|prog|：\verb|clang -Og -o prog main.c mstore.c|。文件 \verb|prog| 的体积变得很大，因为它不仅包含了两个函数的代码，还包含了用来启动和终止程序的代码，以及用来与操作系统交互的代码。反汇编 \verb|prog| 文件：\verb|llvm-objdump -d prog|。
 
 反汇编器会抽取出各种代码序列，包括下面这段：
 
-\begin{textcode}
+\begin{minted}{text}
 0000000000401170 multstore:
   401170: 53                            pushq   %rbx
   401171: 48 89 d3                      movq    %rdx, %rbx
@@ -111,7 +111,7 @@ long mult2(long a, long b) {
   40117c: 5b                            popq    %rbx
   40117d: c3                            retq
   40117e: 66 90                         nop
-\end{textcode}
+\end{minted}
 
 这段代码与 \verb|mstore.c| 反汇编产生的代码几乎完全一样。其中一个主要的区别是左边列出的地址不同（链接器将这段代码的地址移到了一段不同的地址范围中）。第二个不同之处在于链接器填上了 \verb|callq| 指令调用函数 \verb|mult2| 需要使用的地址。链接器的任务之一就是为函数调用找到匹配的函数的可执行代码的位置。最后一个区别是多了一条 \verb|nop| 指令，插入 \verb|nop| 的作用是为了使函数代码变为 16 字节，使得就存储器系统性能而言，能够更好地放置下一个代码块。
 
@@ -123,7 +123,7 @@ long mult2(long a, long b) {
 
 我们的表述是 AT\&T 格式的汇编代码，这是 GCC、OBJDUMP 等工具的默认格式。微软的工具和 Intel 的文档，其汇编代码是 Intel 格式的。可以使用 \verb|clang -Og -S -masm=intel mstore.c| 产生 \verb|multstore| 函数的 Intel 格式的代码：
 
-\begin{nasmcode}
+\begin{minted}{nasm}
 multstore:
     push    rbx
     mov     rbx, rdx
@@ -131,7 +131,7 @@ multstore:
     mov     qword ptr [rbx], rax
     pop     rbx
     ret
-\end{nasmcode}
+\end{minted}
 
 可以看到 Intel 和 AT\&T 格式再如下方面有所不同：
 
@@ -359,16 +359,16 @@ MOVZ 类指令把目的中剩余的字节填充为 0,而 MOVS 类指令填充为
 
 load effective address 指令 \verb|leaq| 实际上是 \verb|movq| 指令的变形，该指令的第一个操作数看上去是一个内存引用，但该指令并不是从指定的位置读入数据，而是将有效地址写入到目的操作数。另外，它还可以简洁地描述普通的算术操作。编译器经常利用 \verb|leaq| 的一些灵活用法，根本就与有效地址计算无关。例如：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 long scale(long x, long y, long z) {
   long t = x + 4 * y + 12 * z;
   return t;
 }
-\end{cppcode}
+\end{minted}
 
 编译时，该函数的算术运算以三条 \verb|leaq| 指令实现：
 
-\begin{gascode}
+\begin{minted}{gas}
 # long scale(long x, long y, long z)
 # x in %rdi, y in %rsi, z in %rdx
 scale:
@@ -376,7 +376,7 @@ scale:
     leaq    (%rdx,%rdx,2), %rcx     # z + 2*z = 3*z
     leaq    (%rax,%rcx,4), %rax     # (x+4*y) + 4*(3*z) = x + 4*y + 12*z
     retq
-\end{gascode}
+\end{minted}
 
 \subsection{一元和二元操作}
 
@@ -526,25 +526,25 @@ PC 相对寻址的好处：指令编码简洁，方便重定位，目标代码�
 
 C 语言中的 \verb|if-else| 语句的通用形式模板如下：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 if (test-expr)
   then-statement
 else
   else-statement
-\end{cppcode}
+\end{minted}
 
 这里的 \verb|test-expr| 是一个整数表达式，它的取值为 0 或者非 0。两个分支语句中只会执行一个。
 
 对于这种通用形式，汇编实现通常会使用下面这种形式，这里，我们用 C 语法来描述控制流：
 
-\begin{cppcode}
+\begin{minted}{cpp}
   t = test-expr;
   if (!t)
     goto done;
 false:
   else-statement
 done:
-\end{cppcode}
+\end{minted}
 
 也就是，汇编器为 \verb|then-statement| 和 \verb|else-statement| 产生各自的代码块。它会插入条件和无条件分支，以保证能执行正确的代码块。
 
@@ -576,11 +576,11 @@ done:
     \end{tabular}
 \end{table}
 
-考虑下面的条件表达式和赋值的通用形式：\cppinline{v = test-expr ? then-epxr : else-expr;}
+考虑下面的条件表达式和赋值的通用形式：\mintinline{cpp}{v = test-expr ? then-epxr : else-expr;}
 
 用条件控制转移的标准方法来编译这个表达式会得到如下形式：
 
-\begin{cppcode}
+\begin{minted}{cpp}
   if (!text-expr)
     goto false;
   v = then-expr;
@@ -588,15 +588,15 @@ done:
 false:
   v = else-expr;
 done:
-\end{cppcode}
+\end{minted}
 
 基于条件传送的代码，会对 \verb|then-expr| 和 \verb|else-expr| 都求值，最终值的选择基于对 \verb|test-expr| 的求值。可以用下面的抽象代码描述：
-\begin{cppcode}
+\begin{minted}{cpp}
 v = then-expr;
 ve = else-expr;
 t = test-expr;
 if (!t) v = ve;
-\end{cppcode}
+\end{minted}
 这个序列的最后一条语句是用条件传送指令实现的。
 
 不是所有的条件表达式都可以用条件传送来编译。最重要的是，无论测试结果如何，我们给出的抽象代码会对 \verb|then-expr| 和 \verb|else-epxr| 都求值。如果这两个表达式中的任意一个产生错误或者副作用，就会导致未预期的行为。
@@ -608,33 +608,33 @@ C 语言提供了多种循环结构，即 \verb|do-while|、\verb|while| 和 \ve
 \subsubsection{do-while 循环}
 
 \verb|do-while| 语句的通用形式如下：
-\begin{cppcode}
+\begin{minted}{cpp}
 do
   body-statement
   while (test-expr);
-\end{cppcode}
+\end{minted}
 这个循环的效果就是重复执行 \verb|body-statement|，对 \verb|test-expr| 求值，如果求值的结果为非 0，就继续循环。可以看到，\verb|body-statement| 至少会执行一次。
 
 这种通用形式可以被翻译成如下所示的条件和 \verb|goto| 语句：
-\begin{cppcode}
+\begin{minted}{cpp}
 loop:
   body-statement
   t = test-expr;
   if (t)
     goto loop;
-\end{cppcode}
+\end{minted}
 
 \subsubsection{while 循环}
 
 \verb|while| 语句的通用形式如下：
-\begin{cppcode}
+\begin{minted}{cpp}
 while (test-expr)
   body-statement
-\end{cppcode}
+\end{minted}
 与 \verb|do-while| 的不同之处在于，在第一次执行 \verb|body-statement| 之前，它会对 \verb|test-expr| 求值，循环有可能在执行之前就中止了。有很多种方法将 \verb|while| 循环翻译成机器代码，GCC 在代码生成中使用其中的两种方法。
 
 第一种翻译方法，称之为 jump to middle，它执行一个无条件跳转跳到循环结尾处的测试，以此来执行初始的测试。如下所示：
-\begin{cppcode}
+\begin{minted}{cpp}
   goto test;
 loop:
   body-statement
@@ -642,10 +642,10 @@ test:
   t = test-expr;
   if (t)
     goto loop;
-\end{cppcode}
+\end{minted}
 
 第二种翻译方法，称之为 guarded-do，首先用条件分支，如果初始条件不成立就跳过循环，把代码变换为 do-while 循环。当使用较高优化等级编译时，例如 -O1，GCC 会采用这种策略。如下所示：
-\begin{cppcode}
+\begin{minted}{cpp}
 t = test-expr;
 if (!t)
   goto done;
@@ -655,19 +655,19 @@ loop:
   if (t)
     goto loop;
 done:
-\end{cppcode}
+\end{minted}
 利用这种策略，编译器常常可以优化初始的测试，例如认为测试条件总是满足。
 
 \subsubsection{for 循环}
 
 \verb|for| 语句的通用形式如下：
-\begin{cppcode}
+\begin{minted}{cpp}
 for (init-expr; test-expr; update-expr)
   body-statement
-\end{cppcode}
+\end{minted}
 
 GCC 为 \verb|for| 循环产生的代码是 \verb|while| 循环的两种翻译之一，这取决于优化的等级。jump to middle 策略会得到如下代码：
-\begin{cppcode}
+\begin{minted}{cpp}
   init-expr;
   goto test;
 loop:
@@ -677,9 +677,9 @@ test:
   t = test-expr;
   if (t)
     goto loop;
-\end{cppcode}
+\end{minted}
 而 guarded-do 策略得到：
-\begin{cppcode}
+\begin{minted}{cpp}
   init-expr;
   t = test-expr;
   if (!t)
@@ -691,14 +691,14 @@ loop:
   if (t)
     goto loop;
 done:
-\end{cppcode}
+\end{minted}
 
 \subsection{switch 语句}
 
 \verb|switch| 语句可以根据一个整数索引值进行 multiway branching。在处理具有多种可能结果的测试时，这种语句特别有用。它们不仅提高了 C 代码的可读性，而且通过使用 jump table 这种数据结构使得实现更加高效。jump table 是一个数组，表项 i 是一个代码段的地址，这个代码段实现当 switch 索引值等于 i 时程序应该采取的动作。程序代码用 switch 索引值来执行一个 jump table 内的数组引用，确定跳转指令的目标。和使用一组很长的 \verb|if-else| 语句相比，使用 jump table 的优点是执行 switch 语句的时间与 switch 情况的数量无关。GCC 根据 switch 情况的数量和情况值的稀疏程度来翻译 switch 语句。当 switch 情况数量比较多，并且值的范围跨度比较小时，就会使用 jump table。
 
 示例如下：
-\begin{cppcode}
+\begin{minted}{cpp}
 void switch_eg(long x, long n, long *dest) {
   long val = x;
   switch (n) {
@@ -720,9 +720,9 @@ void switch_eg(long x, long n, long *dest) {
     }
   *dest = val;
 }
-\end{cppcode}
+\end{minted}
 GNU 扩展支持了显示写出 jump table（创造了一个新的运算符 \verb|&&|，这个运算符创建一个指向代码位置的指针），上面的代码与下面的等价：
-\begin{cppcode}
+\begin{minted}{cpp}
 void switch_eg_impl(long x, long n, long *dest) {
   // Table of code pointers
   static void *jt[7] = {
@@ -753,10 +753,10 @@ loc_def:
 done:
   *dest = val;
 }
-\end{cppcode}
+\end{minted}
 
 使用 \verb|clang -Og -S| 编译如下：
-\begin{gascode}
+\begin{minted}{gas}
 # void switch_eg(long x, long n, long *dest)
 # x in %rdi, n in %rsi, dest in %rdx
 switch_eg:
@@ -782,12 +782,12 @@ switch_eg:
 .LBB0_7:                        # done:
     movq    %rax, (%rdx)        # *dest = val
     retq                        # Return
-\end{gascode}
+\end{minted}
 
 在第 8 行的 \verb|jmpq| 指令的操作数有前缀 \verb|*|，表明这是一个间接跳转，索引由寄存器 \verb|%rsi| 给出。
 
 在汇编代码中，跳转表用以下声明表示：
-\begin{gascode}
+\begin{minted}{gas}
     .section    .rodata,"a",@progbits
     .p2align    3       # Align address to multiple of 8
 .LJTI0_0:
@@ -798,7 +798,7 @@ switch_eg:
     .quad   .LBB0_5     # Case 104: loc_D
     .quad   .LBB0_7     # Case 105: loc_def
     .quad   .LBB0_5     # Case 106: loc_D
-\end{gascode}
+\end{minted}
 这些声明表明，在 \verb|.rodata|（只读数据）段，有一组 7 个 quad word，每个 quad word 都是与指定的汇编代码标号相关联的指令地址。
 
 \section{过程}
@@ -970,13 +970,13 @@ C 语言允许对指针进行运算，而计算出来的值会根据该指针引
 \subsection{定长数组}
 
 C 语言编译器能够优化定长多维数组上的操作。这里我们展示优化等级设置为 \verb|-O1| 时 GCC 和 clang 采用的一些优化。假设将 \verb|fix_matrix| 声明为 $16 \times 16$ 的整型数组：
-\begin{cppcode}
+\begin{minted}{cpp}
 #define N 16
 typedef int fix_matrix[N][N];
-\end{cppcode}
+\end{minted}
 
 原始的 C 代码如下：
-\begin{cppcode*}{firstnumber=last}
+\begin{minted}[firstnumber=last]{cpp}
 // Compute i, k of fixed matrix product
 int fix_prod_ele(fix_matrix A, fix_matrix B, long i, long k) {
   long j;
@@ -987,10 +987,10 @@ int fix_prod_ele(fix_matrix A, fix_matrix B, long i, long k) {
 
   return result;
 }
-\end{cppcode*}
+\end{minted}
 
 使用 \verb|gcc -O1| 生成的如下：
-\begin{gascode}
+\begin{minted}{gas}
 fix_prod_ele:
 .LFB0:
     salq    $6, %rdx            # 64 * i
@@ -1008,10 +1008,10 @@ fix_prod_ele:
     jne     .L2                 # if !=, goto loop
     movl    %ecx, %eax
     ret                         # return
-\end{gascode}
+\end{minted}
 
 使用 \verb|clang -O1| 生成的如下：
-\begin{gascode}
+\begin{minted}{gas}
 fix_prod_ele:
     shlq    $6, %rdx            # 64 * i
     addq    %rdi, %rdx          # Aptr = &A[i][0]
@@ -1027,7 +1027,7 @@ fix_prod_ele:
     cmpq    $16, %rsi           # compare j with 16
     jne     .LBB0_1             # if !=, goto loop
     retq                        # return
-\end{gascode}
+\end{minted}
 
 可以看到，编译器聪明地认识到数组的长度，并把数组引用转换成了指针间接引用。
 
@@ -1036,19 +1036,19 @@ fix_prod_ele:
 C99 中引入了一种功能，允许数组的长度是表达式，在数组被分配的时候才计算出来。可以将一个数组声明为：\verb|int A[expr1][expr2]|。它可以作为一个局部变量，也可以作为一个函数的参数，然后在遇到这个声明的时候，通过对表达式 \verb|expr1| 和 \verb|expr2| 求值来确定数组的维度。
 
 例如：
-\begin{cppcode}
+\begin{minted}{cpp}
 int var_ele(long n, int A[n][n], long i, long j) {
   return A[i][j];
 }
-\end{cppcode}
+\end{minted}
 \verb|clang -Og -S|：
-\begin{gascode}
+\begin{minted}{gas}
 var_ele:
     imulq   %rdx, %rdi              # n * i
     leaq    (%rsi,%rdi,4), %rax     # Aptr + 4ni
     movl    (%rax,%rcx,4), %eax     # Read from M[Aptr+4ni]
     retq
-\end{gascode}
+\end{minted}
 
 \section{异质的数据结构}
 
@@ -1249,15 +1249,15 @@ GCC 只用 \verb|vmovss| 和 \verb|vmovsd| 指令从内存传送数据到 XMM �
 
 和整数运算不同，AVX 浮点操作不能以立即数作为操作数，编译器必须为所有的常量值分配和初始化存储空间，然后再把这些值从内存中读入。例如：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 double cel2fahr(double temp) {
   return 1.8 * temp + 32.0;
 }
-\end{cppcode}
+\end{minted}
 
 相应的 x86-64 汇编代码如下：
 
-\begin{gascode}
+\begin{minted}{gas}
 # double cel2fahr(double temp)
 # temp in %xmm0
 .LCPI0_0:
@@ -1268,7 +1268,7 @@ cel2fahr:
     mulsd   .LCPI0_0(%rip), %xmm0   # Multiply by 1.9
     addsd   .LCPI0_1(%rip), %xmm0   # Add 32.0
     retq
-\end{gascode}
+\end{minted}
 
 \subsection{在浮点代码中使用位级操作}
 

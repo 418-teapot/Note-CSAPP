@@ -14,7 +14,7 @@
 
 编译器必须很小心地对程序只使用安全的优化，也就是说对于程序可能遇到的所有可能的情况，优化后得到的程序和未优化的版本有一样的行为。例如：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 void twiddle1(long *xp, long *yp) {
   *xp += *yp;
   *xp += *yp;
@@ -23,19 +23,19 @@ void twiddle1(long *xp, long *yp) {
 void twiddle2(long *xp, long *yp) {
   *xp += 2 * *yp;
 }
-\end{cppcode}
+\end{minted}
 
 看起来，这两个过程似乎有相同的行为。不过考虑 xp 等于 yp 的情况。此时，函数 twiddle1 会执行下面的计算：
 
-\begin{cppcode*}{autogobble=false, firstnumber=2}
+\begin{minted}[autogobble=false, firstnumber=2]{cpp}
   *xp += *xp;  // Double value at xp
   *xp += *xp;  // Double value at xp
-\end{cppcode*}
+\end{minted}
 结果是 xp 的值增加 4 倍。另一方面，函数 twiddle2 会执行下面的计算：
 
-\begin{cppcode*}{autogobble=false, firstnumber=7}
+\begin{minted}[autogobble=false, firstnumber=7]{cpp}
   *xp += 2 * *xp;  // Triple value at xp
-\end{cppcode*}
+\end{minted}
 结果是 xp 的值增加 3 倍。编译器不知道 twiddle 会如何被调用，因此它必须假设参数 xp 和 yp 可能会相等。因此，它不能产生 twiddle2 风格的代码作为 twiddle1 的优化版本。
 
 这种两个指针可能指向同一个内存位置的情况称为 memory aliasing。在只执行安全的优化中，编译器必须假设不同的指针可能会指向内存中同一个位置。
@@ -89,20 +89,20 @@ void twiddle2(long *xp, long *yp) {
 
 向量由两个内存块表示：头部和数据数组。头部是一个声明如下的结构：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // vec.h
 // Create abstract data type for vector
 typedef struct {
   long len;
   data_t *data;
 } vec_rec, *vec_ptr;
-\end{cppcode}
+\end{minted}
 
 这个声明用 \verb|data_t| 来表示基本元素的数据类型。在测试中，我们度量代码对于整数和浮点数数据的性能。
 
 下面给出了一些生成向量、访问向量元素以及确定向量长度的基本过程：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // Create vector of specified length
 vec_ptr new_vec(long len) {
   // Allocate header structure
@@ -135,11 +135,11 @@ int get_vec_element(vec_ptr v, long index, data_t *dest) {
 long vec_length(vec_ptr v) {
   return v->len;
 }
-\end{cppcode}
+\end{minted}
 
 作为一个优化示例，考虑如下代码：
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // Implementation with maximum use of data abstraction
 void combine1(vec_ptr v, data_t *dest) {
   long i;
@@ -150,18 +150,18 @@ void combine1(vec_ptr v, data_t *dest) {
     *dest = *dest OP val;
   }
 }
-\end{cppcode}
+\end{minted}
 
 它使用某种运算，将一个数组中所有的元素合并成一个值。通过使用编译时常数 IDENT 和 OP 的不同定义，这段代码可以重编译成对数据执行不同的运算。特别的，使用声明：
-\begin{cppcode}
+\begin{minted}{cpp}
 #define IDENT 0
 #define OP +
-\end{cppcode}
+\end{minted}
 它对数组的元素求和。使用声明：
-\begin{cppcode}
+\begin{minted}{cpp}
 #define IDENT 1
 #define OP *
-\end{cppcode}
+\end{minted}
 它计算的是数组元素的乘积。
 
 作为一个起点，下表给出的是 combine1 的 CPE 度量值，它运行在参考机上，尝试了操作（加法或乘法）和数据类型（整数或浮点数）的不同组合。
@@ -184,7 +184,7 @@ void combine1(vec_ptr v, data_t *dest) {
 
 可以观察到，过程 combine1 调用函数 \verb|vec_length| 作为 for 循环的测试条件，每次循环迭代时都必须对测试条件求值。另一方面，向量的长度并不会随着循环的进行而改变。因此，只需计算一次向量的长度。
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // Move call to vec_length out of loop
 void combine2(vec_ptr v, data_t *dest) {
   long i;
@@ -196,7 +196,7 @@ void combine2(vec_ptr v, data_t *dest) {
     *dest = *dest OP val;
   }
 }
-\end{cppcode}
+\end{minted}
 
 \begin{table}[!ht]
     \centering
@@ -220,13 +220,13 @@ void combine2(vec_ptr v, data_t *dest) {
 
 作为替代，假设为我们的抽象数据类型增加一个函数 \verb|get_vec_start|。这个函数返回数组的起始地址，然后就能写出下面的 combine3 所示的过程，其内循环里没有函数调用。它没有用函数调用来获取每个向量元素，而是直接访问数组。
 
-\begin{cppcode}
+\begin{minted}{cpp}
 data_t *get_vec_start(vec_ptr v) {
   return v->data;
 }
-\end{cppcode}
+\end{minted}
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // Direct access to vector data
 void combine3(vec_ptr v, data_t *dest) {
   long i;
@@ -237,7 +237,7 @@ void combine3(vec_ptr v, data_t *dest) {
     *dest = *dest OP data[i];
   }
 }
-\end{cppcode}
+\end{minted}
 
 \begin{table}[!ht]
     \centering
@@ -259,7 +259,7 @@ void combine3(vec_ptr v, data_t *dest) {
 
 combine3 的代码将合并运算计算的值累积在指针 \verb|dest| 指定的位置。通过检查编译出来的为内循环产生的汇编代码，可以看出这一行为。在此我们给出数据类型为 double，合并运算为乘法的 x86-64 代码：
 
-\begin{gascode}
+\begin{minted}{gas}
 # Inner loop of combine3. data_t = double, OP = *. Compiled by clang -O1.
 # dest in %rbx, data in %rax, i in %rcx, length in %r14
 .LBB6_2:                            # loop:
@@ -269,11 +269,11 @@ combine3 的代码将合并运算计算的值累积在指针 \verb|dest| 指定�
     addq    $1, %rcx                #   Increment i
     cmpq    %rcx, %r14              #   Comapre to length
     jne .LBB6_2                     #   if !=, goto loop
-\end{gascode}
+\end{minted}
 
 可以看到每次迭代时，累积变量的数值都要从内存读出再写入到内存。这样的读写很浪费，因为每次迭代开始时从 \verb|dest| 读出的值就是上次迭代最后写入的值。我们能够消除这种不必要的内存读写，按照如下 combine4 所示的方式重写代码。引入一个临时变量 \verb|acc|，它在循环中用来累积计算出来的值。只有在循环完成之后才将结果存放到 \verb|dest| 中。
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // Accumulate result in local variable
 void combine4(vec_ptr v, data_t *dest) {
   long i;
@@ -285,9 +285,9 @@ void combine4(vec_ptr v, data_t *dest) {
   }
   *dest = acc;
 }
-\end{cppcode}
+\end{minted}
 
-\begin{gascode}
+\begin{minted}{gas}
 # Inner loop of combine4. data_t = double, OP = *. Compiled by clang -O1.
 # acc in %xmm0, data in %rax, i in %rcx, length in %rbx
 .LBB7_2:                            # loop:
@@ -295,7 +295,7 @@ void combine4(vec_ptr v, data_t *dest) {
     addq    $1, %rcx                #   Increment i
     cmpq    %rcx, %rbx              #   Compare to length
     jne .LBB7_2                     #   if !=, goto loop
-\end{gascode}
+\end{minted}
 
 与 combine3 中的循环相比，我们将每次迭代的内存操作从两次读和一次写减少到只需要一次读。
 
@@ -334,7 +334,7 @@ void combine4(vec_ptr v, data_t *dest) {
 
 在检查编译器产生的汇编代码时，我们发现内循环的一个有趣的变化：
 
-\begin{gascode}
+\begin{minted}{gas}
 # Inner loop of combine3. data_t = double, OP = *. Compiled by clang -O2.
 # dest in %rsi, data in %rcx, i in %rdx, length in %rax
 .LBB6_7:                            # loop:
@@ -343,11 +343,11 @@ void combine4(vec_ptr v, data_t *dest) {
     addq    $1, %rdx                #   Increment i
     cmpq    %rdx, %rax              #   Compare to length
     jne .LBB6_7                     #   if !=, goto loop
-\end{gascode}
+\end{minted}
 
 把上面的代码与用 -O1 产生的代码进行比较：
 
-\begin{gascode}
+\begin{minted}{gas}
 # Inner loop of combine3. data_t = double, OP = *. Compiled by clang -O1.
 # dest in %rbx, data in %rax, i in %rcx, length in %r14
 .LBB6_2:                            # loop:
@@ -357,7 +357,7 @@ void combine4(vec_ptr v, data_t *dest) {
     addq    $1, %rcx                #   Increment i
     cmpq    %rcx, %r14              #   Comapre to length
     jne .LBB6_2                     #   if !=, goto loop
-\end{gascode}
+\end{minted}
 
 我们看到，-O2 中减少了一条 \verb|movsd| 指令，直接从 \verb|dest| 指定的位置读数据。
 
@@ -458,7 +458,7 @@ Latency bound 给出了任何必须按照严格顺序完成 combine 运算的函
 
 以 combine4 为例来描述数据流表示法。
 
-\begin{gascode}
+\begin{minted}{gas}
 # Inner loop of combine4. data_t = double, OP = *. Compiled by gcc -O1.
 # acc in %xmm0, data+i in %rdx, data+length in %rax
 .L25:                           # loop:
@@ -466,7 +466,7 @@ Latency bound 给出了任何必须按照严格顺序完成 combine 运算的函
     addq    $8, %rdx            #   Increment data+i
     cmpq    %rax, %rdx          #   Compare to data+length
     jne     .L25                #   If !=, goto loop
-\end{gascode}
+\end{minted}
 
 \begin{figure}[!ht]
     \centering
@@ -513,7 +513,7 @@ Latency bound 给出了任何必须按照严格顺序完成 combine 运算的函
 
 下图是 combine 代码的使用 $2 \times 1$ 循环展开的版本。第一个循环每次处理数组的两个元素，也就是每次迭代，循环索引 $i$ 加 2，在一次迭代中，对数组元素 $i$ 和 $i+1$ 使用 combine 运算。
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // 2 x 1 loop unrolling
 void combine5(vec_ptr v, data_t *dest) {
   long i;
@@ -533,7 +533,7 @@ void combine5(vec_ptr v, data_t *dest) {
   }
   *dest = acc;
 }
-\end{cppcode}
+\end{minted}
 
 把这个思想归纳为对一个循环按任意因子 $k$ 进行展开，由此产生 $k \times 1$ 循环展开。
 
@@ -595,7 +595,7 @@ void combine5(vec_ptr v, data_t *dest) {
 
 下面是使用这种方法的代码。它既使用了两次循环，以使每次迭代合并更多的元素，也使用了两路并行，将索引值为偶数的元素累积在变量 acc0 中，而索引值为奇数的元素累积在变量 acc1 中。因此，我们将其称为 $2 \times 2$ 循环展开。
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // 2 x 2 loop unrolling
 void combine6(vec_ptr v, data_t *dest) {
   long i;
@@ -617,7 +617,7 @@ void combine6(vec_ptr v, data_t *dest) {
   }
   *dest = acc0 OP acc1;
 }
-\end{cppcode}
+\end{minted}
 
 可以得到下面的性能：
 
@@ -663,16 +663,16 @@ void combine6(vec_ptr v, data_t *dest) {
 现在来探讨另一种打破顺序相关从而使性能超过延迟界限的方法。我们看到过做 $k \times 1$ 循环展开的 combine5 的数据相关，对代码做很小的改动，可以从根本改变合并执行的方式，也极大地提高了程序的性能。
 
 下面给出了 combine7，它与 combine5 的展开代码的唯一区别在于内循环中元素合并的方式。在 combine5 中，合并是以下面这条语句来实现的：
-\begin{cppcode*}{linenos=false}
+\begin{minted}[linenos=false]{cpp}
     acc = (acc OP data[i]) OP data[i+1];
-\end{cppcode*}
+\end{minted}
 而在 combine7 中，合并是以这条语句来实现的：
-\begin{cppcode*}{linenos=false}
+\begin{minted}[linenos=false]{cpp}
     acc = acc OP (data[i] OP data[i+1]);
-\end{cppcode*}
+\end{minted}
 差别仅在于两个括号是如何放置的。我们称之为 reassociation transformation（重新结合变换），因为括号改变了向量元素与累积值 acc 的合并顺序，产生了我们称为 $2 \times 1a$ 的循环展开形式。
 
-\begin{cppcode}
+\begin{minted}{cpp}
 // 2 x 1a loop unrolling
 void combine7(vec_ptr v, data_t *dest) {
   long i;
@@ -692,7 +692,7 @@ void combine7(vec_ptr v, data_t *dest) {
   }
   *dest = acc;
 }
-\end{cppcode}
+\end{minted}
 
 \begin{figure}[!ht]
     \centering
