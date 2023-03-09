@@ -26,22 +26,37 @@ hello.c 的表示方法说明了一个基本思想：系统中所有的信息，
 
 Linux 系统上，从源文件到目标文件的转化是由编译期驱动程序（例如 GCC 或者 clang）完成的，这个翻译过程可以分为四个阶段，如图所示。执行这四个阶段的程序（预处理器，编译期，汇编器和链接器）一起构成了编译系统(compilation system）。
 
-\begin{tikzfig}
-    \coordinate (begin) at (0,0);
-    \node[draw, inner sep=6pt, align=center] (cpp) [right=of begin, xshift=0.5cm] {Pre-\\processor\\(cpp)};
-    \node[draw, inner sep=6pt, align=center] (cc1) [right=of cpp, xshift=0.5cm] {Compiler\\(cc1)};
-    \node[draw, inner sep=6pt, align=center] (as)  [right=of cc1, xshift=0.5cm] {Assembler\\(as)};
-    \node[draw, inner sep=6pt, align=center] (ld)  [right=of as, xshift=0.9cm] {Linker\\(ld)};
-    \coordinate [right=of ld, xshift=0.9cm] (end);
-    \coordinate [above=0.8cm of ld.west, xshift=-1.5cm] (tmp0);
-    \coordinate [above=0.5cm of ld.west] (tmp1);
-    \draw[thick, ->] (0,0) -- node[above] {$hello.c$} node[below, align=center] {Source\\[-0.3em]program\\[-0.3em](text)} (cpp.west);
-    \draw[thick, ->] (cpp.east) -- node[above] {$hello.i$} node[below, align=center] {Modified\\[-0.3em]source\\[-0.3em]program\\[-0.3em](text)} (cc1.west);
-    \draw[thick, ->] (cc1.east) -- node[above] {$hello.s$} node[below, align=center] {Assembly\\[-0.3em]program\\[-0.3em](text)} (as.west);
-    \draw[thick, ->] (as.east) -- node[above] {$hello.o$} node[below, align=center] {Relocatable\\[-0.3em]object\\[-0.3em]programs\\[-0.3em](binary)} (ld.west);
-    \draw[thick, ->] (ld.east) -- node[above] {$hello$} node[below, align=center] {Executable\\[-0.3em]object\\[-0.3em]program\\[-0.3em](binary)} (end.west);
-    \draw[thick, ->] (tmp0) node[above] {$printf.o$} |- (tmp1);
-\end{tikzfig}
+\begin{figure}[!ht]
+    \centering
+    \begin{tikzpicture}[node distance = 5em]
+        \small
+        \tikzset{
+            m_node/.style = {
+                draw,
+                rounded corners = 1mm,
+                inner sep = 2pt,
+                minimum height = 4.5em,
+                text width = 5em,
+                text centered,
+            }
+        }
+        \node (start) {};
+        \node[m_node, right = of start] (cpp) {预处理器\\(cpp)};
+        \node[m_node, right = of cpp] (cc1) {编译器\\(cc1)};
+        \node[m_node, right = of cc1] (as) {汇编器\\(as)};
+        \node[m_node, right = of as] (ld) {链接器\\(ld)};
+        \node[above right = 0.5em of as] (print) {\texttt{printf.o}};
+        \node[right = of ld] (end) {};
+        \graph {
+            (start) -> ["\texttt{hello.c}"above, "源程序"below] (cpp) ->
+                       [align = center, "\texttt{hello.i}"above, "修改后的\\源程序"below] (cc1) ->
+                       ["\texttt{hello.s}"above, "汇编程序"below] (as) ->
+                       [align = center, "\texttt{hello.o}"above, "可重定位\\目标程序"below] (ld) ->
+                       [align = center, "\texttt{hello}"above, "可执行\\目标程序"below] (end);
+        };
+        \draw (print) [->]|- ($(ld.west) + (0, 1.5em)$);
+    \end{tikzpicture}
+\end{figure}
 
 \begin{itemize}
     \item 预处理阶段。预处理器（cpp）根据以字符 \# 开头的命令，修改原始的 C 程序。比如 hello.c 中第 1 行的 \mintinline{cpp}{#include <stdio.h>} 命令告诉预处理器读取系统头文件 stdio.h 的内容，并把它直接插入程序文本中。结果就得到了另一个 C 程序，通常是以 .i 作为文件扩展名。
