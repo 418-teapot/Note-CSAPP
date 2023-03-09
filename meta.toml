@@ -1,8 +1,21 @@
+[[meta]]
 title = "Computer Systems: A Programmer's Perspective, 3rd edition"
 language = "en"
 author = [
     "Randal E. Bryant",
-    "David R. O'Hallaron"
+    "David R. O'Hallaron",
 ]
 publisher = "Pearson Education"
 isbn = "978-0-13-409266-9"
+
+[[meta]]
+title = "深入理解计算机系统"
+language = "zh"
+author = [
+    "Randal E. Bryant",
+    "David R. O'Hallaron",
+    "龚弈利",
+    "贺莲",
+]
+publiser = "机械工业出版社"
+isbn = "978-7-111-54493-7"
